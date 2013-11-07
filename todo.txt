@@ -1,0 +1,6 @@
+possibly use gevent for nonblocking IOs to send server data from the client
+use the sha256 algorithm described here http://www.movable-type.co.uk/scripts/sha256.html except transcribe so that this works with opencl
+write a script that queues things into the redis queue of data to analyze
+      for bitcoins write a python script that enumerates all strings to be hashed and upload to redis
+      for image filtering write a script that enumerates all of the images
+          for image filtering we only have latency cost, should still be able to achieve filtering and returning images in real time
