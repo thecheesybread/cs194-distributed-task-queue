@@ -33,4 +33,5 @@ def pong():
 
 
 if __name__ == "__main__":
+    #app.run(host='0.0.0.0') # when we want to test deployment this will make our server externall visible. we have to open up port 5000 though
     app.run()
