@@ -253,4 +253,34 @@ $(document).ready(function() {
 		throw e;
 	    }
 	}
+
+	// each element in host_args is an array so that we call var host_arg=host_args.shift(); cl_vector_add(host_arg);
+	// for cl_vector_add each host_arg will be a uint32Array.
+	host_args = new Array();
+	//in_data.push(
+	out_data = new Array();
+	get_host_args = function() {
+	    var xhr = new XMLHttpRequest();
+	    xhr.open('GET', '/get_host_args/', true); //true means async is true
+	    xhr.responseType = 'arraybuffer';
+
+	    xhr.onload = function(e) {
+		if (this.status == 200) {
+		    var array_buffer = xhr.response;
+		    if (array_buffer) {
+			//https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
+			var bytes_per_block = 1024 * 1024; // 1mb per block
+			for (var current_byte = 0; current_byte < arrayBuffer.byteLength; current_byte += bytes_per_clock) {
+			    var byte_array = new Uint32Array(arrayBuffer, current_byte, bytes_per_block);
+			    host_args.push(byte_array);
+			    alert(byte_array[0] + "," + byte_array[1] + "," + byte_array[2] + "," + byte_array[3]);
+			}
+		    }
+		}
+	    };
+	    xhr.send();
+	}
+	export_out_data = function() {
+	    // do something pretty simple here to send the data out. convert out_data into json and send it out.
+	}
     });
