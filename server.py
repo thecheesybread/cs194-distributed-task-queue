@@ -1,15 +1,36 @@
 from flask import Flask, render_template
+from flask import request
+import redis
 
 app = Flask(__name__)
+app.config.from_object(__name__)
+app.config['DEBUG'] = True
+
+
+r = redis.Redis(host='localhost', port=6379, db=0)
+# use as queue
+# use to store current clients and extra information (wsgi is multithreaded and is not guaranteed to store state across different threads, so we use redis to store state)
+
+# QUEUEING ELEMENTS (pipeline allows these to atomically execute and also increases speeds by a factor of 4)
+# p = r.pipeline()
+# p.rpush('queue', data_to_work_with);p.rpush('queue', data_to_work_with);p.rpush('queue', data_to_work_with)
+# p.execute()
+
+# POPPING ELEMENTS
+# p = r.pipeline()
+# p.lpop('queue') - to get single element in the queue to work on
+# p.lrange('queue', 0, 10); r.trim(10, -1) - pops the first ten elements off of the queue
+# p.execute()
+
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("task.html", context={'task_id':request.remote_addr})
 
 @app.route("/pong")
 def pong():
     return "/static/js/pong.js"
 
+
 if __name__ == "__main__":
     app.run()
-

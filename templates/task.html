@@ -6,12 +6,14 @@ I am a task node
 
 {% block head %}
 <script type="text/javascript">
+{{ context.task_id }}
 //insert javascript here
 </script>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-  <h3> Currently running task node # </h3>
+  <h3> Currently running task node #{{ context.task_id }} </h3>
+  <!-- add a status bar -->
 </div>
 {% endblock %}
