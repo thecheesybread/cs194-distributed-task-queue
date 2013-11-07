@@ -6,7 +6,7 @@ I am a task node
 
 {% block head %}
 <script id="clProgramVectorAdd" type="text/x-opencl">
-  __kernel void ckVectorAdd(__global unsigned int* vectorIn1, 
+  __kernel void ckVectorAdd(__global unsigned int* vectorIn1,
                             __global unsigned int* vectorIn2,
                             __global unsigned int* vectorOut,
                             unsigned int uiVectorWidth) {
@@ -18,14 +18,14 @@ I am a task node
     // add the vector elements
     vectorOut[x] = vectorIn1[x] + vectorIn2[x];
   }
-</script>          
+</script>
 
 <script type="text/javascript">
 $(document).ready(function() {
 task_id = "{{ context.task_id }}";
-dumpCLData();
-CL_vectorAdd();
-
+//dumpCLData();
+//CL_vectorAdd();
+get_host_args();
 
 });
 </script>

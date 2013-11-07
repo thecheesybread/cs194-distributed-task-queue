@@ -3,14 +3,14 @@ $(document).ready(function() {
 	    var s = "";
 	    try {
 		// First check if the WebCL extension is installed at all
-                
+
 		if (window.WebCL == undefined) {
 		    alert("Unfortunately your system does not support WebCL. " +
 			  "Make sure that you have both the OpenCL driver " +
 			  "and the WebCL browser extension installed.");
 		    return false;
 		}
-    
+
 		// List of OpenCL information parameter names.
 
 		var infos = [ [ "CL_DEVICE_ADDRESS_BITS", WebCL.CL_DEVICE_ADDRESS_BITS ],
@@ -65,10 +65,10 @@ $(document).ready(function() {
 			      [ "CL_DEVICE_VENDOR_ID", WebCL.CL_DEVICE_VENDOR_ID ],
 			      [ "CL_DEVICE_VERSION", WebCL.CL_DEVICE_VERSION ],
 			      [ "CL_DRIVER_VERSION", WebCL.CL_DRIVER_VERSION ] ];
-    
-    
+
+
 		// Get a list of available CL platforms, and another list of the
-		// available devices on each platform. Platform and device information 
+		// available devices on each platform. Platform and device information
 		// is inquired into string s.
 
 		var platforms = WebCL.getPlatformIDs ();
@@ -81,20 +81,20 @@ $(document).ready(function() {
 		    var name = plat.getPlatformInfo (WebCL.CL_PLATFORM_NAME);
 		    s += "[" + i + "] \"<b>" + name + "</b>\"<br>";
 		    s += "<div style='padding-left:2em;'>";
-		    s += "<b>vendor:</b> " 
+		    s += "<b>vendor:</b> "
 			+ plat.getPlatformInfo (WebCL.CL_PLATFORM_VENDOR) + "<br>";
-		    s += "<b>version:</b> " 
+		    s += "<b>version:</b> "
 			+ plat.getPlatformInfo (WebCL.CL_PLATFORM_VERSION) + "<br>";
-		    s += "<b>profile:</b> " 
+		    s += "<b>profile:</b> "
 			+ plat.getPlatformInfo (WebCL.CL_PLATFORM_PROFILE) + "<br>";
-		    s += "<b>extensions:</b> " 
+		    s += "<b>extensions:</b> "
 			+ plat.getPlatformInfo (WebCL.CL_PLATFORM_EXTENSIONS) + "<br>";
 
 		    var devices = plat.getDeviceIDs (WebCL.CL_DEVICE_TYPE_ALL);
 		    s += "<b>Devices:</b> " + devices.length + "<br>";
 		    for (var j in devices) {
 			var dev = devices[j];
-			s += "[" + j + "] \"<b>" + dev.getDeviceInfo(WebCL.CL_DEVICE_NAME) 
+			s += "[" + j + "] \"<b>" + dev.getDeviceInfo(WebCL.CL_DEVICE_NAME)
 			    + "</b>\"<br>";
 			s += "<div style='padding-left:2em;'>";
 
@@ -102,8 +102,8 @@ $(document).ready(function() {
 			    s += infos[k][0] + ":   ";
 			    try {
 				if (infos[k][1] == WebCL.CL_DEVICE_PLATFORM) {
-				    s += "<b>" 
-					+ dev.getDeviceInfo(infos[k][1]).getPlatformInfo(WebCL.CL_PLATFORM_NAME) 
+				    s += "<b>"
+					+ dev.getDeviceInfo(infos[k][1]).getPlatformInfo(WebCL.CL_PLATFORM_NAME)
 					+ "</b>";
 				} else {
 				    s += "<b>" + dev.getDeviceInfo(infos[k][1]) + "</b>";
@@ -117,7 +117,7 @@ $(document).ready(function() {
 		    }
 		    s += "</div>";
 		}
-    
+
 		// String s is printed out to div element output
 
 		var output = document.getElementById ("output");
@@ -138,7 +138,7 @@ $(document).ready(function() {
 		mHttpReq.open("GET", kernelElement.src, false);
 		mHttpReq.send(null);
 		kernelSource = mHttpReq.responseText;
-	    } 
+	    }
 	    return kernelSource;
 	}
 
@@ -151,8 +151,8 @@ $(document).ready(function() {
 	    output.innerHTML = "";
 
 	    try {
-  
-		// First check if the WebCL extension is installed at all 
+
+		// First check if the WebCL extension is installed at all
 		if (window.WebCL == undefined) {
 		    alert("Unfortunately your system does not support WebCL. " +
             "Make sure that you have both the OpenCL driver " +
@@ -162,21 +162,21 @@ $(document).ready(function() {
 
 		// Generate input vectors
 		var vectorLength = 30;
-		var UIvector1 = new Uint32Array(vectorLength);    
+		var UIvector1 = new Uint32Array(vectorLength);
 		var UIvector2 = new Uint32Array(vectorLength);
 		for ( var i=0; i<vectorLength;  i=i+1) {
 		    UIvector1[i] = Math.floor(Math.random() * 100); //Random number 0..99
 		    UIvector2[i] = Math.floor(Math.random() * 100); //Random number 0..99
 		}
-    
+
 		output.innerHTML += "<br>Vector length = " + vectorLength;
 		//============================SET UP WEBCL CONTEXT USING DEFAULT DEVICE=====================
-		// Setup WebCL context using the default device of the first platform 
+		// Setup WebCL context using the default device of the first platform
 		var platforms = WebCL.getPlatformIDs();
-		var ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM, 
+		var ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM,
 							platforms[0]],
 						       WebCL.CL_DEVICE_TYPE_DEFAULT);
-                     
+
 		// Reserve buffers
 		var bufSize = vectorLength * 4; // size in bytes
 		output.innerHTML += "<br>Buffer size: " + bufSize + " bytes";
@@ -193,10 +193,10 @@ $(document).ready(function() {
 		    program.buildProgram ([devices[0]], "");
 		} catch(e) {
 		    alert ("Failed to build WebCL program. Error "
-			   + program.getProgramBuildInfo (devices[0], 
+			   + program.getProgramBuildInfo (devices[0],
 							  WebCL.CL_PROGRAM_BUILD_STATUS)
-             + ":  " 
-			   + program.getProgramBuildInfo (devices[0], 
+             + ":  "
+			   + program.getProgramBuildInfo (devices[0],
 							  WebCL.CL_PROGRAM_BUILD_LOG));
 		    throw e;
 		}
@@ -204,7 +204,7 @@ $(document).ready(function() {
 		// Create kernel and set arguments
 		var kernel = program.createKernel ("ckVectorAdd");
 		kernel.setKernelArg (0, bufIn1);
-		kernel.setKernelArg (1, bufIn2);    
+		kernel.setKernelArg (1, bufIn2);
 		kernel.setKernelArg (2, bufOut);
 		kernel.setKernelArg (3, vectorLength, WebCL.types.UINT);
 
@@ -212,29 +212,29 @@ $(document).ready(function() {
 		//============================INSTANTIATE COMMAND QUEUE AND EXECUTE PROGRAM AND SET LOCAL AND GLOBAL WORK SIZES=====================
 		// Create command queue using the first available device
 		var cmdQueue = ctx.createCommandQueue (devices[0], 0);
-    
+
 		// Write the buffer to OpenCL device memory
 		cmdQueue.enqueueWriteBuffer (bufIn1, false, 0, bufSize, UIvector1, []);
 		cmdQueue.enqueueWriteBuffer (bufIn2, false, 0, bufSize, UIvector2, []);
- 
+
 		// Init ND-range
 		var localWS = [8];
 		var globalWS = [Math.ceil (vectorLength / localWS) * localWS];
 
 		output.innerHTML += "<br>Global work item size: " + globalWS;
 		output.innerHTML += "<br>Local work item size: " + localWS;
-    
+
 		// Execute (enqueue) kernel
-		cmdQueue.enqueueNDRangeKernel(kernel, globalWS.length, [], 
+		cmdQueue.enqueueNDRangeKernel(kernel, globalWS.length, [],
 					      globalWS, localWS, []);
 
 		// Read the result buffer from OpenCL device
 		outBuffer = new Uint32Array(vectorLength);
-		cmdQueue.enqueueReadBuffer (bufOut, false, 0, bufSize, outBuffer, []);    
+		cmdQueue.enqueueReadBuffer (bufOut, false, 0, bufSize, outBuffer, []);
 		cmdQueue.finish (); //Finish all the operations
 
 		//Print input vectors and result vector
-		output.innerHTML += "<br>Vector1 = "; 
+		output.innerHTML += "<br>Vector1 = ";
 		for (var i = 0; i < vectorLength; i = i + 1) {
 		    output.innerHTML += UIvector1[i] + ", ";
 		}
@@ -248,7 +248,7 @@ $(document).ready(function() {
 		}
 
 	    } catch(e) {
-		document.getElementById("output").innerHTML 
+		document.getElementById("output").innerHTML
 		    += "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
 		throw e;
 	    }
@@ -265,20 +265,21 @@ $(document).ready(function() {
 	    xhr.responseType = 'arraybuffer';
 
 	    xhr.onload = function(e) {
-		if (this.status == 200) {
-		    var array_buffer = xhr.response;
-		    if (array_buffer) {
-			//https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
-			var bytes_per_block = 1024 * 1024; // 1mb per block
-			for (var current_byte = 0; current_byte < arrayBuffer.byteLength; current_byte += bytes_per_clock) {
-			    var byte_array = new Uint32Array(arrayBuffer, current_byte, bytes_per_block);
-			    host_args.push(byte_array);
-			    alert(byte_array[0] + "," + byte_array[1] + "," + byte_array[2] + "," + byte_array[3]);
-			}
+		    if (this.status == 200) {
+		      var array_buffer = xhr.response;
+		      if (array_buffer) {
+			      //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
+            var bytes_per_block = 1024 * 1024; // 1mb per block
+
+			      for (var current_byte = 0; current_byte < array_buffer.byteLength; current_byte += bytes_per_block) {
+			        var byte_array = new Uint32Array(array_buffer, current_byte, bytes_per_block / 4); // read 1024 * 1024 / 4 ints of 4 bytes
+			        host_args.push(byte_array);
+			        alert(byte_array[0] + "," + byte_array[1] + "," + byte_array[2] + "," + byte_array[3]);
+			      }
+		      }
 		    }
-		}
 	    };
-	    xhr.send();
+	  xhr.send();
 	}
 	export_out_data = function() {
 	    // do something pretty simple here to send the data out. convert out_data into json and send it out.

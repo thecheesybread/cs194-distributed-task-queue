@@ -32,11 +32,13 @@ def home():
 def pong():
     return "/static/js/pong.js"
 
-# this is a very important function and based off of each task_id we will return the host args that 
+# this is a very important function and based off of each task_id we will return the host args that
 @app.route("/get_host_args/")
 def get_host_args():
-    return array.array('I', [i for i in 1024 * 1024 * 4]).tostring()
-    
+    x = array.array('I', [i for i in range(1024 * 1024)]).tostring()
+    print 'reached'
+    return x
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0') # when we want to test deployment this will make our server externall visible. we have to open up port 5000 though
