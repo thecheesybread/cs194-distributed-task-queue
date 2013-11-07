@@ -5,15 +5,38 @@ I am a task node
 
 
 {% block head %}
+<script id="clProgramVectorAdd" type="text/x-opencl">
+  __kernel void ckVectorAdd(__global unsigned int* vectorIn1, 
+                            __global unsigned int* vectorIn2,
+                            __global unsigned int* vectorOut,
+                            unsigned int uiVectorWidth) {
+     unsigned int x = get_global_id(0);
+     if (x >= (uiVectorWidth))
+     {
+       return;
+    }
+    // add the vector elements
+    vectorOut[x] = vectorIn1[x] + vectorIn2[x];
+  }
+</script>          
+
 <script type="text/javascript">
-task_id = {{ context.task_id }}
-//insert javascript here
+$(document).ready(function() {
+task_id = "{{ context.task_id }}";
+dumpCLData();
+CL_vectorAdd();
+
+
+});
 </script>
+
 {% endblock %}
 
 {% block content %}
 <div class="container">
   <h3> Currently running task node #{{ context.task_id }} </h3>
-  <!-- add a status bar -->
+  <!-- add a status bar updating about current system state -->
+  <div id="output"> </div>
 </div>
+
 {% endblock %}
