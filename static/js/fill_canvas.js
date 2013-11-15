@@ -1,4 +1,4 @@
-function draw_matrix(array, row_size) {
+function draw_matrix(array, row_size, max_num) {
     c = document.getElementById("laplace");
     ctx = c.getContext("2d");
 
@@ -11,12 +11,23 @@ function draw_matrix(array, row_size) {
     imgData = ctx.createImageData(width, height);
 
     for (var i = 0; i < imgData.data.length; i+=4) {
-        //TODO: Write a function that determines RGB values from data in array
-        imgData.data[i] = 0;
-        imgData.data[i+1] = 0;
-        imgData.data[i+2] = 255;
+        rgb = calculate_color_intensity(array[i/4], max_num);
+        imgData.data[i] = rgb[0];
+        imgData.data[i+1] = rgb[1];
+        imgData.data[i+2] = rgb[2];
         imgData.data[i+3] = 255;
     }
     ctx.putImageData(imgData, 100, 100);
 
+}
+
+function calculate_color_intensity(x, max) {
+
+    red = x/max * 255 ;
+    green = (1 - (max-x)/max) * 255;
+    // red = x/max * 255;
+    // green = (1-(x/max)) * 255;
+    blue = 0;
+
+    return [red, green, blue]
 }
