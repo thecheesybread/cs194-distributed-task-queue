@@ -2,11 +2,19 @@ from flask import Flask, render_template, jsonify
 from flask import request
 import redis
 import array
+import json
 
+
+"""
+FLASK SETTINGS
+"""
 app = Flask(__name__)
 app.config.from_object(__name__)
 app.config['DEBUG'] = True
 
+"""
+REDIS SETTINGS"
+"""
 
 r = redis.Redis(host='localhost', port=6379, db=0)
 r.set(1, "/static/js/add.js")
@@ -24,7 +32,9 @@ r.set(1, "/static/js/add.js")
 # p.lrange('queue', 0, 10); r.trim(10, -1) - pops the first ten elements off of the queue
 # p.execute()
 
-
+"""
+FLASK CODE
+"""
 @app.route("/")
 def home():
     return render_template("task.html", context={'task_id':request.remote_addr})
@@ -69,8 +79,6 @@ def get_data():
         "task_id": task_id,
         "data": [2, 3],
     }
-    print r.get((task_id, 1))
-    print test_data
     return jsonify(test_data)
 
 @app.route("/send_result")

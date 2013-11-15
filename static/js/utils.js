@@ -269,7 +269,7 @@ $(document).ready(function() {
 		      var array_buffer = xhr.response;
 		      if (array_buffer) {
 			      //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
-            var bytes_per_block = 1024 * 1024; // 1mb per block
+           			      var bytes_per_block = 1024 * 1024; // 1mb per block
 
 			      for (var current_byte = 0; current_byte < array_buffer.byteLength; current_byte += bytes_per_block) {
 			        var byte_array = new Uint32Array(array_buffer, current_byte, bytes_per_block / 4); // read 1024 * 1024 / 4 ints of 4 bytes

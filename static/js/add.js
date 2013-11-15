@@ -9,10 +9,11 @@ function get_data() {
     request = $.ajax(url, {"async": false}).done(function(args) {
         results = add.apply(null, args.data);
         send_data(results);
+        console.log("The result is : " + results);
     });
 }
 
-function send_data(r) {
+function send_data() {
     $.ajax("/send_result").done(function(msg) {
         console.log(msg);
     });
