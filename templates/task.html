@@ -76,7 +76,7 @@ __kernel void clLaplace(__global float4* bufIn,
 		}
 
 		// Generate input vectors
-		var n = 16;
+		var n = 1 << 24;
     var rowSize = 4;
     var columnSize = n / rowSize;
     //var input = new Uint32Array(n);
@@ -84,6 +84,7 @@ __kernel void clLaplace(__global float4* bufIn,
 		for ( var i=0; i<n;  i=i+1) {
 		    input[i] = Math.random() * 100; //Random number 0..99
 		}
+    alert("reached");
 
 		output.innerHTML += "<br>Vector length = " + n;
 		//============================SET UP WEBCL CONTEXT USING DEFAULT DEVICE=====================
@@ -136,8 +137,8 @@ __kernel void clLaplace(__global float4* bufIn,
 		// Init ND-range
     //var localWS = [8];
 		//var globalWS = [Math.ceil (n / localWS) * localWS];
-    var localWS = [1,1];
-    var globalWS = [4, 4];
+    var localWS = [16,16];
+    var globalWS = [Math.sqrt(n), Math.sqrt(n)];
 		output.innerHTML += "<br>Global work item size: " + globalWS;
 		output.innerHTML += "<br>Local work item size: " + localWS;
 
@@ -149,14 +150,14 @@ __kernel void clLaplace(__global float4* bufIn,
 		outBuffer = new Float32Array(n);
 		cmdQueue.enqueueReadBuffer (bufOut, false, 0, bufSize, outBuffer, []);
 		cmdQueue.finish (); //Finish all the operations
-
+    alert("finished");
 		//Print input vectors and result vector
 		output.innerHTML += "<br>Input = ";
-		for (var i = 0; i < n; i = i + 1) {
+		for (var i = 0; i < 100; i = i + 1) {
 		    output.innerHTML += input[i].toFixed(2) + ", ";
 		}
 		output.innerHTML += "<br>Result = ";
-		for (var i = 0; i < n; i = i + 1) {
+		for (var i = 0; i < 100; i = i + 1) {
 		    output.innerHTML += outBuffer[i].toFixed(2) + ", ";
 		}
 
