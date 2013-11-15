@@ -200,17 +200,16 @@ task_id = "{{ context.task_id }}";
 </canvas>
 
 <script src="/static/js/fill_canvas.js"></script>
-<script src="/static/js/heatmap/src/heatmap.js"></script>
 <script>
-  var test_array = [];
-  var max = 2000;
-  for (var i = 0; i < 1024*1024; i++) {
-    x = Math.random()*2000;
-    test_array[i] = x;
-  }
+  // var test_array = [];
+  // var max = 2000;
+  // for (var i = 0; i < 1024*1024; i++) {
+  //   x = Math.random()*2000;
+  //   test_array[i] = x;
+  // }
 
-  var row_size = 1024;
-  draw_matrix(test_array, row_size, max);
+  // var row_size = 1024;
+  // draw_matrix(test_array, row_size, max);
 </script>
 
 {% endblock %}
