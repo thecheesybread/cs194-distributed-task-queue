@@ -42,7 +42,7 @@ I am a task node
 
       // Generate input vectors
       var n = 1 << 24;
-      var rowSize = 4;
+      var rowSize = Math.sqrt(n);
       var columnSize = n / rowSize;
       //var input = new Uint32Array(n);
       var input = new Float32Array(n);
