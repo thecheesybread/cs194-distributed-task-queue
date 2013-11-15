@@ -272,7 +272,8 @@ $(document).ready(function() {
            			      var bytes_per_block = 1024 * 1024; // 1mb per block
 
 			      for (var current_byte = 0; current_byte < array_buffer.byteLength; current_byte += bytes_per_block) {
-			        var byte_array = new Uint32Array(array_buffer, current_byte, bytes_per_block / 4); // read 1024 * 1024 / 4 ints of 4 bytes
+			        //var byte_array = new Uint32Array(array_buffer, current_byte, bytes_per_block / 4); // read 1024 * 1024 / 4 ints of 4 bytes
+              var byte_array = new Float32Array(array_buffer, current_byte, bytes_per_block / 4); // read 1024 * 1024 / 4 ints of 4 bytes
 			        host_args.push(byte_array);
 			        alert(byte_array[0] + "," + byte_array[1] + "," + byte_array[2] + "," + byte_array[3]);
 			      }

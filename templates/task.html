@@ -21,8 +21,8 @@ I am a task node
 </script>
 
 <script id="clLaplace" type="text/x-opencl">
-__kernel void clLaplace(__global unsigned int* bufIn,
-                        __global unsigned int* bufOut,
+__kernel void clLaplace(__global float4* bufIn,
+                        __global float4* bufOut,
                         unsigned int rowSize,
                         unsigned int columnSize,
                         unsigned int n) {
@@ -32,24 +32,25 @@ __kernel void clLaplace(__global unsigned int* bufIn,
   if (index >= n) {
     return;
   }
-  unsigned int num = 0;
-  unsigned int denom = 0;
+  float4 num = 0;
+  float4 denom = 0;
   if (x > 0) {
     num += bufIn[index - 1];
-    denom++;
+    denom+=1;
   }
   if (x < rowSize - 1) {
     num += bufIn[index + 1];
-    denom++;
+    denom+=1;
   }
   if (y > 0) {
     num += bufIn[index - rowSize];
-    denom++;
+    denom+=1;
   }
   if (y < columnSize - 1) {
     num += bufIn[index +  rowSize];
-    denom++;
+    denom+=1;
   }
+  bufOut[index] = num / denom;
 
 
 }
@@ -78,9 +79,10 @@ __kernel void clLaplace(__global unsigned int* bufIn,
 		var n = 16;
     var rowSize = 4;
     var columnSize = n / rowSize;
-		var input = new Uint32Array(n);
+    //var input = new Uint32Array(n);
+    var input = new Float32Array(n);
 		for ( var i=0; i<n;  i=i+1) {
-		    input[i] = Math.floor(Math.random() * 100); //Random number 0..99
+		    input[i] = Math.random() * 100; //Random number 0..99
 		}
 
 		output.innerHTML += "<br>Vector length = " + n;
@@ -115,7 +117,7 @@ __kernel void clLaplace(__global unsigned int* bufIn,
 		}
 
 		// Create kernel and set arguments
-		var kernel = program.createKernel ("clVectorAdd");
+		var kernel = program.createKernel ("clLaplace");
 		kernel.setKernelArg (0, bufIn);
 		kernel.setKernelArg (1, bufOut);
 		kernel.setKernelArg (2, rowSize, WebCL.types.UINT);
@@ -134,7 +136,7 @@ __kernel void clLaplace(__global unsigned int* bufIn,
 		// Init ND-range
     //var localWS = [8];
 		//var globalWS = [Math.ceil (n / localWS) * localWS];
-    var localWS = [1];
+    var localWS = [1,1];
     var globalWS = [4, 4];
 		output.innerHTML += "<br>Global work item size: " + globalWS;
 		output.innerHTML += "<br>Local work item size: " + localWS;
@@ -144,7 +146,7 @@ __kernel void clLaplace(__global unsigned int* bufIn,
 					      globalWS, localWS, []);
 
 		// Read the result buffer from OpenCL device
-		outBuffer = new Uint32Array(n);
+		outBuffer = new Float32Array(n);
 		cmdQueue.enqueueReadBuffer (bufOut, false, 0, bufSize, outBuffer, []);
 		cmdQueue.finish (); //Finish all the operations
 
