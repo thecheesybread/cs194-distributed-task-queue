@@ -20,6 +20,137 @@ I am a task node
   }
 </script>
 
+<script id="clLaplace" type="text/x-opencl">
+  __kernel void clLaplace(__global unsigned int* bufIn,
+                            __global unsigned int* bufOut,
+                            unsigned int rowSize,
+                            unsigned int columnSize,
+                            unsigned int n) {
+     unsigned int x = get_global_id(0);
+     unsigned int y = get_global_id(1);
+     unsigned int index = x + y * rowSize;
+
+    if (x > 0 && y > 0 && x < rowSize - 2 && y < columnSize - 2) {
+
+                                                 }
+                                                 bufOut[index] = vectorIn1[x] + vectorIn2[x];
+  }
+</script>
+
+
+<script type="text/javascript">
+	CL_laplace = function () {
+	    //============================GENERATES 2 RANDOM VECTOR ARRAYS==============================
+	    // All output is written to element by id "output"
+	    var output = document.getElementById("output");
+	    output.innerHTML = "";
+
+	    try {
+
+		// First check if the WebCL extension is installed at all
+		if (window.WebCL == undefined) {
+		    alert("Unfortunately your system does not support WebCL. " +
+            "Make sure that you have both the OpenCL driver " +
+			  "and the WebCL browser extension installed.");
+		    return false;
+		}
+
+		// Generate input vectors
+		var n = 16;
+    var rowSize = 4;
+    var columnSize = n / rowSize;
+		var input = new Uint32Array(n);
+		for ( var i=0; i<n;  i=i+1) {
+		    input[i] = Math.floor(Math.random() * 100); //Random number 0..99
+		}
+
+		output.innerHTML += "<br>Vector length = " + n;
+		//============================SET UP WEBCL CONTEXT USING DEFAULT DEVICE=====================
+		// Setup WebCL context using the default device of the first platform
+		var platforms = WebCL.getPlatformIDs();
+		var ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM,
+							platforms[0]],
+						       WebCL.CL_DEVICE_TYPE_DEFAULT);
+
+		// Reserve buffers
+		var bufSize = n * 4; // size in bytes
+		output.innerHTML += "<br>Buffer size: " + bufSize + " bytes";
+		var bufIn = ctx.createBuffer (WebCL.CL_MEM_READ_WRITE, bufSize);
+		var bufOut = ctx.createBuffer (WebCL.CL_MEM_READ_WRITE, bufSize);
+		//=====================CREATE START BUILDING PROGRAM KERNEL AND ADD ARGUMENTS TO KERNEL=====================
+		// Create and build program for the first device
+		var kernelSrc = loadKernel("clLaplace");
+		var program = ctx.createProgramWithSource(kernelSrc);
+		var devices = ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
+
+		try {
+		    program.buildProgram ([devices[0]], "");
+		} catch(e) {
+		    alert ("Failed to build WebCL program. Error "
+			   + program.getProgramBuildInfo (devices[0],
+							  WebCL.CL_PROGRAM_BUILD_STATUS)
+             + ":  "
+			   + program.getProgramBuildInfo (devices[0],
+							  WebCL.CL_PROGRAM_BUILD_LOG));
+		    throw e;
+		}
+
+		// Create kernel and set arguments
+		var kernel = program.createKernel ("clVectorAdd");
+		kernel.setKernelArg (0, bufIn);
+		kernel.setKernelArg (1, bufOut);
+		kernel.setKernelArg (2, rowSize, WebCL.types.UINT);
+		kernel.setKernelArg (3, columnSize, WebCL.types.UINT);
+		kernel.setKernelArg (4, n, WebCL.types.UINT);
+
+
+
+		//============================INSTANTIATE COMMAND QUEUE AND EXECUTE PROGRAM AND SET LOCAL AND GLOBAL WORK SIZES=====================
+		// Create command queue using the first available device
+		var cmdQueue = ctx.createCommandQueue (devices[0], 0);
+
+		// Write the buffer to OpenCL device memory
+		cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
+
+		// Init ND-range
+    //var localWS = [8];
+		//var globalWS = [Math.ceil (n / localWS) * localWS];
+    var localWS = [1];
+    var globalWS = [4, 4];
+		output.innerHTML += "<br>Global work item size: " + globalWS;
+		output.innerHTML += "<br>Local work item size: " + localWS;
+
+		// Execute (enqueue) kernel
+		cmdQueue.enqueueNDRangeKernel(kernel, globalWS.length, [],
+					      globalWS, localWS, []);
+
+		// Read the result buffer from OpenCL device
+		outBuffer = new Uint32Array(n);
+		cmdQueue.enqueueReadBuffer (bufOut, false, 0, bufSize, outBuffer, []);
+		cmdQueue.finish (); //Finish all the operations
+
+		//Print input vectors and result vector
+		output.innerHTML += "<br>Input = ";
+		for (var i = 0; i < n; i = i + 1) {
+		    output.innerHTML += input[i] + ", ";
+		}
+		output.innerHTML += "<br>Result = ";
+		for (var i = 0; i < n; i = i + 1) {
+		    output.innerHTML += outBuffer[i] + ", ";
+		}
+
+	    } catch(e) {
+		document.getElementById("output").innerHTML
+		    += "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
+		throw e;
+	    }
+	}
+  $(document).ready(function() {
+    CL_laplace();
+  });
+</script>
+
+
 <script type="text/javascript">
 $(document).ready(function() {
 task_id = "{{ context.task_id }}";
