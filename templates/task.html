@@ -21,20 +21,39 @@ I am a task node
 </script>
 
 <script id="clLaplace" type="text/x-opencl">
-  __kernel void clLaplace(__global unsigned int* bufIn,
-                            __global unsigned int* bufOut,
-                            unsigned int rowSize,
-                            unsigned int columnSize,
-                            unsigned int n) {
-     unsigned int x = get_global_id(0);
-     unsigned int y = get_global_id(1);
-     unsigned int index = x + y * rowSize;
-
-    if (x > 0 && y > 0 && x < rowSize - 2 && y < columnSize - 2) {
-
-                                                 }
-                                                 bufOut[index] = vectorIn1[x] + vectorIn2[x];
+__kernel void clLaplace(__global unsigned int* bufIn,
+                        __global unsigned int* bufOut,
+                        unsigned int rowSize,
+                        unsigned int columnSize,
+                        unsigned int n) {
+  unsigned int x = get_global_id(0);
+  unsigned int y = get_global_id(1);
+  unsigned int index = x + y * rowSize;
+  if (index >= n) {
+    return;
   }
+  unsigned int num = 0;
+  unsigned int denom = 0;
+  if (x > 0) {
+    num += bufIn[index - 1];
+    denom++;
+  }
+  if (x < rowSize - 1) {
+    num += bufIn[index + 1];
+    denom++;
+  }
+  if (y > 0) {
+    num += bufIn[index - rowSize];
+    denom++;
+  }
+  if (y < columnSize - 1) {
+    num += bufIn[index +  rowSize];
+    denom++;
+  }
+
+
+}
+
 </script>
 
 
