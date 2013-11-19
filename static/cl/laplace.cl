@@ -8,9 +8,14 @@ __kernel void vvadd (__global float4 *in,
   unsigned int x = get_global_id(0);
   unsigned int y = get_global_id(1);
   unsigned int index = x + y * rowSize;
-  if (index >= n) {
+
+  if (x >= rowSize)
     return;
-  }
+  if (y >= columnSize)
+    return;
+
+
+
   float4 num = 0;
   float4 denom = 0;
   if (x > 0) {
