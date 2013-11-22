@@ -38,14 +38,18 @@ int main(int argc, char *argv[])
 
   /* Allocate arrays on the host
    * and fill with random data */
-  int n = (1<<20);
+  int n = (1<<24);
+  int rowSize = 1<<12;
+  int colSize = n / rowSize;
   h_in = new float[n];
   h_out = new float[n];
   bzero(h_out, sizeof(float)*n);
 
   for(int i = 0; i < n; i++)
     {
-      h_in[i] = (float)drand48();
+      //h_in[i] = (float)drand48();
+      //h_in[i] = (float) 1;
+      h_in[i] = (float) (i % rowSize);
     }
 
   /* CS194: Allocate memory for arrays on
@@ -65,11 +69,9 @@ int main(int argc, char *argv[])
            h_in, 0, NULL, NULL);
 
   /* CS194: Define the global and local workgroup sizes */
-  int rowSize = 1<<11;
-  int colSize = n / rowSize;
   size_t global_work_size[2] = {rowSize, colSize};
   size_t local_work_size[2] = {8, 8};
-
+  printf("n:%d", n);
   /* CS194: Set Kernel Arguments Y, A, B, n*/
   err = clSetKernelArg(laplace, 0, sizeof(cl_mem), &g_in);
   CHK_ERR(err);
