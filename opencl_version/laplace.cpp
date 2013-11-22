@@ -70,8 +70,8 @@ int main(int argc, char *argv[])
 
   /* CS194: Define the global and local workgroup sizes */
   size_t global_work_size[2] = {rowSize, colSize};
-  size_t local_work_size[2] = {8, 8};
-  printf("n:%d", n);
+  size_t local_work_size[2] = {16, 16};
+  printf("n:%d\n", n);
   /* CS194: Set Kernel Arguments Y, A, B, n*/
   err = clSetKernelArg(laplace, 0, sizeof(cl_mem), &g_in);
   CHK_ERR(err);
