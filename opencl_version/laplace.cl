@@ -1,4 +1,4 @@
-__kernel void vvadd (__global float *in,
+__kernel void laplace (__global float *in,
    		     __global float *out,
  		     int rowSize,
 		     int columnSize,

@@ -7,30 +7,30 @@
 
 int main(int argc, char *argv[])
 {
-  std::string vvadd_kernel_str;
+  std::string laplace_kernel_str;
 
   /* Provide names of the OpenCL kernels
    * and cl file that they're kept in */
-  std::string vvadd_name_str = 
-    std::string("vvadd");
-  std::string vvadd_kernel_file = 
-    std::string("vvadd.cl");
+  std::string laplace_name_str =
+    std::string("laplace");
+  std::string laplace_kernel_file =
+    std::string("laplace.cl");
 
-  cl_vars_t cv; 
-  cl_kernel vvadd;
+  cl_vars_t cv;
+  cl_kernel laplace;
 
   /* Read OpenCL file into STL string */
-  readFile(vvadd_kernel_file,
-	   vvadd_kernel_str);
-  
-  /* Initialize the OpenCL runtime 
+  readFile(laplace_kernel_file,
+	   laplace_kernel_str);
+
+  /* Initialize the OpenCL runtime
    * Source in clhelp.cpp */
   initialize_ocl(cv);
-  
+
   /* Compile all OpenCL kernels */
-  compile_ocl_program(vvadd, cv, vvadd_kernel_str.c_str(),
-		      vvadd_name_str.c_str());
-  
+  compile_ocl_program(laplace, cv, laplace_kernel_str.c_str(),
+		      laplace_name_str.c_str());
+
   /* Arrays on the host (CPU) */
   float *h_in, *h_out;
   /* Arrays on the device (GPU) */
@@ -42,20 +42,20 @@ int main(int argc, char *argv[])
   h_in = new float[n];
   h_out = new float[n];
   bzero(h_out, sizeof(float)*n);
-  
+
   for(int i = 0; i < n; i++)
     {
       h_in[i] = (float)drand48();
     }
 
-  /* CS194: Allocate memory for arrays on 
+  /* CS194: Allocate memory for arrays on
    * the GPU. Matrix Y, A, and B.*/
   cl_int err = CL_SUCCESS;
   g_in = clCreateBuffer(cv.context,CL_MEM_READ_WRITE,sizeof(float)*n,NULL,&err);
   CHK_ERR(err);
   g_out = clCreateBuffer(cv.context,CL_MEM_READ_WRITE,sizeof(float)*n,NULL,&err);
   CHK_ERR(err);
-  
+
 
   /* CS194: Copy Y array data from host CPU to GPU */
   err = clEnqueueWriteBuffer(cv.commands, g_out, true, 0, sizeof(float)*n,
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 
   err = clEnqueueWriteBuffer(cv.commands, g_in, true, 0, sizeof(float)*n,
            h_in, 0, NULL, NULL);
-  
+
   /* CS194: Define the global and local workgroup sizes */
   int rowSize = 1<<11;
   int colSize = n / rowSize;
@@ -71,20 +71,20 @@ int main(int argc, char *argv[])
   size_t local_work_size[2] = {8, 8};
 
   /* CS194: Set Kernel Arguments Y, A, B, n*/
-  err = clSetKernelArg(vvadd, 0, sizeof(cl_mem), &g_in);
+  err = clSetKernelArg(laplace, 0, sizeof(cl_mem), &g_in);
   CHK_ERR(err);
-  err = clSetKernelArg(vvadd, 1, sizeof(cl_mem), &g_out);
+  err = clSetKernelArg(laplace, 1, sizeof(cl_mem), &g_out);
   CHK_ERR(err);
-  err = clSetKernelArg(vvadd, 2, sizeof(int), &rowSize);
+  err = clSetKernelArg(laplace, 2, sizeof(int), &rowSize);
   CHK_ERR(err);
-  err = clSetKernelArg(vvadd, 3, sizeof(int), &colSize);
+  err = clSetKernelArg(laplace, 3, sizeof(int), &colSize);
   CHK_ERR(err);
-  err = clSetKernelArg(vvadd, 4, sizeof(int), &n);
+  err = clSetKernelArg(laplace, 4, sizeof(int), &n);
   CHK_ERR(err);
 
-  /* CS194: Call kernel vvadd on the GPU */
+  /* CS194: Call kernel laplace on the GPU */
   err = clEnqueueNDRangeKernel(cv.commands, //command_queue
-             vvadd, //kernel
+             laplace, //kernel
              2,//work_dim,
              NULL, //global_work_offset
              global_work_size, //global_work_size
@@ -127,12 +127,12 @@ int main(int argc, char *argv[])
 
   /* Shut down the OpenCL runtime */
   uninitialize_ocl(cv);
-  
-  delete [] h_in; 
+
+  delete [] h_in;
   delete [] h_out;
-  
-  clReleaseMemObject(g_in); 
-  clReleaseMemObject(g_out); 
-  
+
+  clReleaseMemObject(g_in);
+  clReleaseMemObject(g_out);
+
   return 0;
 }
