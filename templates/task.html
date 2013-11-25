@@ -6,6 +6,7 @@ I am a task node
 
 {% block head %}
 <script id="clLaplace" type="text/x-opencl" src="/static/cl/laplace.cl"></script>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
 
 <script type="text/javascript">
   $(document).ready(function() {
@@ -46,12 +47,15 @@ I am a task node
     var bufOut = laplace_vars[2];
 
     var startTime = new Date().getTime();
-    var iterations = 10;
+    var iterations = 1;
     var data = [bufOut, bufIn, input];
     document.getElementById("output").innerHTML = "";
+          console.log("Sending computed results...");
+
     for (var i = 0; i < iterations; i++) {
       data = CL_laplace(kernel, cmdQueue, data[1], data[0], n, rowSize, columnSize);
       display_results(data[2], rowSize, columnSize);
+      sendComputedResultsToServer(data[2], {{ context.task_id }}, rowSize, columnSize);
     }
     var endTime = new Date().getTime();
     alert("Total time: " + (endTime - startTime) + " Total iterations: " + iterations + " Average per iteration: " + (endTime - startTime) / iterations);
@@ -199,6 +203,18 @@ I am a task node
         output.innerHTML += "<br>";
       }
       output.innerHTML += "<br><br><br>";
+    }
+
+    sendComputedResultsToServer = function(data, taskId, rowSize, columnSize) {
+      var json_data = {"results": data, "task_id": taskId, "row_size": rowSize, "column_size": columnSize };
+      $.ajax({
+        type: "POST",
+        url: "/send_data",
+        data: JSON.stringify(json_data),
+        success: function(){console.log("Computed array sent.")},
+        dataType: "json",
+        contentType: "application/json"
+      });
     }
 </script>
 

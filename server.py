@@ -75,6 +75,14 @@ def get_task_info(task_id):
     #TODO: return information about the task
     pass
 
+@app.route("/send_data", methods=['GET', 'POST'])
+def receive_data():
+    if request.method == 'POST':
+        results = list(request.json['results'])
+        r.set(str(request.json['task_id'])+":results", results)
+        print "Results stored!"
+        return "Received results!"
+
 @app.route("/data")
 def get_data():
     #TODO: Get the specified chunk of data
