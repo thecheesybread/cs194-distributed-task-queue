@@ -49,10 +49,10 @@ I am a task node
     var bufOut = laplace_vars[2];
 
     var startTime = new Date().getTime();
-    var iterations = 1;
+    var iterations = 20;
     var data = [bufOut, bufIn, input];
     document.getElementById("output").innerHTML = "";
-    
+
     for (var i = 0; i < iterations; i++) {
       data = CL_laplace(kernel, cmdQueue, data[1], data[0], n, rowSize, columnSize);
       display_results(data[2], rowSize, columnSize);
@@ -71,30 +71,41 @@ I am a task node
         var array_buffer = xhr.response;
         if (array_buffer) {
           //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
-
-          //callback(new Float32Array(array_buffer, current_byte, bytes_per_block / 4)); // read 1024 * 1024 / 4 ints of 4 bytes
           callback(new Float32Array(array_buffer, 0, (1 << 24))); // read 1024 * 1024 / 4 ints of 4 bytes
-          //run_laplace(new Float32Array(1 << 24)); // read 1024 * 1024 / 4 ints of 4 bytes
         }
-        /*
-          var bytes_per_block = 1024 * 1024; // 1mb per block
-          for (var current_byte = 0; current_byte < array_buffer.byteLength; current_byte += bytes_per_block) {
-
-          //var byte_array = new Uint32Array(array_buffer, current_byte, bytes_per_block / 4); // read 1024 * 1024 / 4 ints of 4 bytes
-          var byte_array = new Float32Array(array_buffer, current_byte, bytes_per_block / 4); // read 1024 * 1024 / 4 ints of 4 bytes
-          host_args.push(byte_array);
-          alert(byte_array[0] + "," + byte_array[1] + "," + byte_array[2] + "," + byte_array[3]);
-          } */
       } else {
         alert("could not load data from server");
       }
     }
     xhr.send();
   }
-  export_out_data = function() {
+  export_out_data = function(outBuf, iteration) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/send_result/' + task_id + '/' + iteration, true);
+    xhr.onload = function(e) {
+      alert(e.response);
+    };
+    xhr.send(outBuf);
     // do something pretty simple here to send the data out. convert out_data into json and send it out.
     // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Sending_and_Receiving_Binary_Data
     // use that to send xmlhttp data
+  }
+  get_update = function(callback, iteration) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/get_update_data/' + task_id + '/' + iteration, true); //true means async is true
+    xhr.responseType = 'arraybuffer';
+    xhr.onload = function(e) {
+      if (this.status == 200) {
+        var array_buffer = xhr.response;
+        if (array_buffer) {
+          //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
+          callback(new Float32Array(array_buffer, 0, (1 << 24))); // read 1024 * 1024 / 4 ints of 4 bytes
+        }
+      } else {
+        alert("could not load data from server");
+      }
+    }
+    xhr.send();
   }
 
   prepare_gpu = function() {
@@ -224,12 +235,9 @@ I am a task node
   }
 
   synchronize = function() {
-    var data = new FormData();
-    data.append('task_id', task_id);
     $.ajax({
-            type: 'POST',
-            url: '/synchronize/',
-            data: data,
+            type: 'GET',
+            url: '/synchronize/' + task_id,
             contentType: false,
             processData: false,
             success: function(data, status, jqXHR) {

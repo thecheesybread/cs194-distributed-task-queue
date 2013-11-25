@@ -36,7 +36,7 @@ r.set(1, "/static/js/add.js")
 """
 FLASK CODE
 """
-NUMBER_OF_CLIENTS = 1
+NUMBER_OF_CLIENTS = 2
 @app.route("/")
 def home():
     #return render_template("task.html", context={'task_id':str(request.remote_addr) + '.' + str(int(random.random() * 1000000))})
@@ -100,12 +100,33 @@ def get_data():
     }
     return jsonify(test_data)
 
-@app.route("/send_result")
-def process_result():
-    ip = request.remote_addr
-    task_id = r.get(ip)
-    #do something with results
+@app.route("/send_result/<string:task_id>/<int:iteration>", methods=['POST'])
+def store_result(task_id, iteration):
+    index = get_client_index(task_id)
+    data = request.data
+    print result
+    while (iteration * NUMBER_OF_CLIENTS + index < r.llen('update_data') ):
+        r.rpush('update_data', 0)
+    r.lset('update_data', iteration * NUMBER_OF_CLIENTS + index, data)
     return "Results have been processed"
+
+def get_client_index(task_id):
+    for index in range(NUMBER_OF_CLIENTS):
+        if r.lindex('connected_clients', index) == task_id:
+            return index
+
+
+@app.route("/get_update_data/<string:task_id>/<int:iteration>")
+def get_update_data(task_id, iteration):
+    index = get_client_index(task_id)
+    if index == 0:
+        data = r.lindex('update_data', iteration * NUMBER_OF_CLIENTS + 1)
+    elif index == 1:
+        data = r.lindex('update_data', iteration * NUMBER_OF_CLIENTS)
+    if data == 0:
+        return 'Data not ready yet'
+    else:
+        return data
 
 @app.route("/heart_beat")
 def heart_beat():
@@ -114,10 +135,7 @@ def heart_beat():
 # this is a very important function and based off of each task_id we will return the host args that
 @app.route("/get_input_data/<string:task_id>")
 def get_input_data(task_id):
-    for index in range(NUMBER_OF_CLIENTS):
-        if r.lindex('connected_clients', index) == task_id:
-            break
-
+    index = get_client_index(task_id)
     # starting data is a 1 << 25 BY 1 << 24 array
     # each processor processes 1 << 24 by 1 << 24 array. there will be a left and right processor sharing their data
     if index == 0:
@@ -128,9 +146,8 @@ def get_input_data(task_id):
     print 'reached'
     return x
 
-@app.route("/synchronize/", methods=['POST'])
-def synchronize():
-    task_id = request.form['task_id']
+@app.route("/synchronize/<string:task_id>", methods=['GET'])
+def synchronize(task_id):
     current_time = time.time() # time in seconds after epoch
     r.zadd('current_clients', task_id,  long(current_time))
     synced_clients = set(r.zrangebyscore('current_clients', long(current_time - 15), long(current_time + 1))) # get clients that have synchronized within last 5 seconds
