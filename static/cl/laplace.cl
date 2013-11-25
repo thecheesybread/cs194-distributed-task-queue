@@ -1,5 +1,5 @@
-__kernel void clLaplace (__global float4 *in,
-   		     __global float4 *out,
+__kernel void clLaplace (__global float *in,
+   		     __global float *out,
  		     int rowSize,
 		     int columnSize,
 		     int n)
@@ -16,8 +16,8 @@ __kernel void clLaplace (__global float4 *in,
 
 
 
-  float4 num = 0;
-  float4 denom = 0;
+  float num = 0;
+  float denom = 0;
   if (x > 0) {
     num += in[index - 1];
     denom+=1;
