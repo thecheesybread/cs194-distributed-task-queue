@@ -3,7 +3,8 @@ from flask import request
 import redis
 import array
 import json
-
+import random
+import time
 
 """
 FLASK SETTINGS
@@ -35,9 +36,11 @@ r.set(1, "/static/js/add.js")
 """
 FLASK CODE
 """
+NUMBER_OF_CLIENTS = 1
 @app.route("/")
 def home():
-    return render_template("task.html", context={'task_id':request.remote_addr})
+    #return render_template("task.html", context={'task_id':str(request.remote_addr) + '.' + str(int(random.random() * 1000000))})
+    return render_template("task.html", context={'task_id':str(request.remote_addr)})
 
 
 #@app.route("/distributed")
@@ -99,12 +102,34 @@ def heart_beat():
     ip_addr = request.remote_addr
 
 # this is a very important function and based off of each task_id we will return the host args that
-@app.route("/get_input_data/")
-def get_input_data():
-    x = array.array('f', [float(i % (1 << 12)) for i in range(1 << 24)]).tostring()
+@app.route("/get_input_data/<string:task_id>")
+def get_input_data(task_id):
+    for index in range(NUMBER_OF_CLIENTS):
+        if r.lindex('connected_clients', index) == task_id:
+            break
+
+    # starting data is a 1 << 25 BY 1 << 24 array
+    # each processor processes 1 << 24 by 1 << 24 array. there will be a left and right processor sharing their data
+    if index == 0:
+        x = array.array('f', [float(i % (1 << 12)) for i in range(1 << 24)]).tostring()
+    elif index == 1:
+        x = array.array('f', [float((i % (1 << 12)) + (i << 12)) for i in range(1 << 24)]).tostring()
     #see http://docs.python.org/2/library/array.html
     print 'reached'
     return x
+
+@app.route("/synchronize/", methods=['POST'])
+def synchronize():
+    task_id = request.form['task_id']
+    current_time = time.time() # time in seconds after epoch
+    r.zadd('current_clients', task_id,  long(current_time))
+    synced_clients = set(r.zrangebyscore('current_clients', long(current_time - 15), long(current_time + 1))) # get clients that have synchronized within last 5 seconds
+    if len(synced_clients) == NUMBER_OF_CLIENTS:
+        r.rpush('connected_clients', task_id)
+        return 'ready'
+    else:
+        r.delete('connected_clients')
+        return 'not ready yet'
 
 
 if __name__ == "__main__":
