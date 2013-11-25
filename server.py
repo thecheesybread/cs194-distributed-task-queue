@@ -44,9 +44,9 @@ def home():
     return render_template("task.html", context={'task_id':str(request.remote_addr)})
 
 
-#@app.route("/distributed")
-#def home():
-#    return render_template("distributed_task.html", context={'task_id':request.remote_addr})
+@app.route("/distributed")
+def home():
+    return render_template("distributed_task.html", context={'task_id':request.remote_addr})
 
 
 @app.route("/pong")

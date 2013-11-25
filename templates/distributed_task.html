@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block title %}
+I am a task node
+{% endblock %}
+
+
+{% block head %}
+<script id="clLaplace" type="text/x-opencl" src="/static/cl/laplace.cl"></script>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+<script type="text/javascript" src="http://mbostock.github.com/d3/d3.v2.js"></script>
+
+<script type="text/javascript">
+  $(document).ready(function() {
+    task_id = "{{ context.task_id }}";
+    //get_input(run_laplace);
+    synchronize();
+    var outBuf = new Float32Array(100);
+    for (var i = 0; i < 100; i++) {
+      outBuf[i] = i;
+    }
+    export_out_data(outBuf, 1);
+
+  });
+</script>
+
+<script type="text/javascript">
+  run_laplace = function(input) {
+    // Get GPU set up data
+    var gpu_vars = prepare_gpu();
+    var ctx = gpu_vars[0];
+    var devices = gpu_vars[1];
+    var cmdQueue = gpu_vars[2];
+
+
+    // Get input variables to seed laplace transformation
+    var n = 1 << 24;
+    var rowSize = Math.sqrt(n);
+    var columnSize = n / rowSize;
+
+    /*
+      var input = new Float32Array(n);
+      for ( var i=0; i<n;  i=i+1) {
+      //input[i] = Math.random() * 100; //Random number 0..99
+      input[i] = i % rowSize;
+      }*/
+
+    //Prepare and get variables to run laplace tranformation
+    var laplace_vars = prepare_laplace(input, ctx, devices, cmdQueue, n);
+    var kernel = laplace_vars[0];
+    var bufIn = laplace_vars[1];
+    var bufOut = laplace_vars[2];
+
+    var startTime = new Date().getTime();
+    var iterations = 20;
+    var data = [bufOut, bufIn, input];
+    document.getElementById("output").innerHTML = "";
+
+    for (var i = 0; i < iterations; i++) {
+      data = CL_laplace(kernel, cmdQueue, data[1], data[0], n, rowSize, columnSize);
+      display_results(data[2], rowSize, columnSize);
+      // sendComputedResultsToServer(data[2], "{{ context.task_id }}", rowSize, columnSize);
+    }
+    var endTime = new Date().getTime();
+    alert("Total time: " + (endTime - startTime) + " Total iterations: " + iterations + " Average per iteration: " + (endTime - startTime) / iterations);
+  }
+
+  get_input = function(callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/get_input_data/' + task_id, true); //true means async is true
+    xhr.responseType = 'arraybuffer';
+    xhr.onload = function(e) {
+      if (this.status == 200) {
+        var array_buffer = xhr.response;
+        if (array_buffer) {
+          //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
+          callback(new Float32Array(array_buffer, 0, (1 << 24))); // read 1024 * 1024 / 4 ints of 4 bytes
+        }
+      } else {
+        alert("could not load data from server");
+      }
+    }
+    xhr.send();
+  }
+
+  export_out_data = function(outBuf, iteration) {
+    alert('/send_result/' + task_id + '/' + iteration);
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/send_result/' + task_id + '/' + iteration, true);
+    xhr.send(outBuf);
+    // do something pretty simple here to send the data out. convert out_data into json and send it out.
+    // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Sending_and_Receiving_Binary_Data
+    // use that to send xmlhttp data
+  }
+
+  get_update = function(callback, iteration) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/get_update_data/' + task_id + '/' + iteration, true); //true means async is true
+    xhr.responseType = 'arraybuffer';
+    xhr.onload = function(e) {
+      if (this.status == 200) {
+        var array_buffer = xhr.response;
+        if (array_buffer) {
+          //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
+          callback(new Float32Array(array_buffer, 0, (1 << 24))); // read 1024 * 1024 / 4 ints of 4 bytes
+        }
+      } else {
+        alert("could not load data from server");
+        get_update(callback, iteration);
+      }
+    }
+    xhr.send();
+  }
+
+  prepare_gpu = function() {
+    try {
+      // First check if the WebCL extension is installed at all
+      if (window.WebCL == undefined) {
+        alert("Unfortunately your system does not support WebCL. " +
+              "Make sure that you have both the OpenCL driver " +
+              "and the WebCL browser extension installed.");
+        return false;
+      }
+      //============================SET UP WEBCL CONTEXT USING DEFAULT DEVICE=====================
+      // Setup WebCL context using the default device of the first platform
+      var platforms = WebCL.getPlatformIDs();
+      var ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM,
+                                              platforms[0]],
+                                             WebCL.CL_DEVICE_TYPE_DEFAULT);
+      var devices = ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
+      var cmdQueue = ctx.createCommandQueue (devices[0], 0);
+      return [ctx, devices, cmdQueue];
+    } catch(e) {
+      document.getElementById("output").innerHTML
+        += "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
+      throw e;
+    }
+  }
+
+  prepare_laplace = function(input, ctx, devices, cmdQueue, n) {
+    //=====================CREATE START BUILDING PROGRAM KERNEL AND ADD ARGUMENTS TO KERNEL=====================
+    // Create and build program for the first device
+    var kernelSrc = loadKernel("clLaplace");
+    var program = ctx.createProgramWithSource(kernelSrc);
+    // Reserve buffers
+    var bufSize = n * 4; // size in bytes
+    var bufIn = ctx.createBuffer (WebCL.CL_MEM_READ_WRITE, bufSize);
+    var bufOut = ctx.createBuffer (WebCL.CL_MEM_READ_WRITE, bufSize);
+    try {
+      program.buildProgram ([devices[0]], "");
+    } catch(e) {
+      alert ("Failed to build WebCL program. Error "
+             + program.getProgramBuildInfo (devices[0],
+                                            WebCL.CL_PROGRAM_BUILD_STATUS)
+             + ":  "
+             + program.getProgramBuildInfo (devices[0],
+                                            WebCL.CL_PROGRAM_BUILD_LOG));
+      throw e;
+    }
+    var kernel = program.createKernel ("clLaplace");
+    //============================INSTANTIATE COMMAND QUEUE AND EXECUTE PROGRAM AND SET LOCAL AND GLOBAL WORK SIZES=====================
+    cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
+    return [kernel, bufIn, bufOut]
+  }
+
+  CL_laplace = function (kernel, cmdQueue, bufIn, bufOut, n, rowSize, columnSize) {
+    //============================GENERATES RANDOM VECTOR==============================
+    // All output is written to element by id "output"
+    var output = document.getElementById("output");
+    try {
+      output.innerHTML += "<br>Vector length = " + n;
+      var localWS = [16,16];
+      var globalWS = [Math.sqrt(n), Math.sqrt(n)];
+      output.innerHTML += "<br>Global work item size: " + globalWS;
+      output.innerHTML += "<br>Local work item size: " + localWS;
+      // Create command queue using the first available device
+
+
+      // Write the buffer to OpenCL device memory
+      kernel.setKernelArg (0, bufIn);
+      kernel.setKernelArg (1, bufOut);
+      kernel.setKernelArg (2, rowSize, WebCL.types.UINT);
+      kernel.setKernelArg (3, columnSize, WebCL.types.UINT);
+      kernel.setKernelArg (4, n, WebCL.types.UINT);
+
+      // Execute (enqueue) kernel
+      cmdQueue.enqueueNDRangeKernel(kernel, globalWS.length, [],
+                                    globalWS, localWS, []);
+
+      // Read the result buffer from OpenCL device
+      outBuffer = new Float32Array(n);
+      var bufSize = n * 4; // size in bytes
+      cmdQueue.enqueueReadBuffer (bufOut, false, 0, bufSize, outBuffer, []);
+      cmdQueue.finish ();
+      return [bufIn, bufOut, outBuffer];
+      //Finish all the operations
+      //Print input vectors and result vector
+
+    } catch(e) {
+      output += "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
+      throw e;
+    }
+  }
+
+  sendComputedResultsToServer = function(data, taskId, rowSize, columnSize) {
+    var json_data = {"results": data, "task_id": taskId, "row_size": rowSize, "column_size": columnSize };
+    $.ajax({
+      type: "POST",
+      url: "/send_data",
+      data: JSON.stringify(json_data),
+      success: function(){console.log("Computed array sent.")},
+      dataType: "json",
+      contentType: "application/json"
+    });
+  }
+
+  draw_matrix2 = function(results, rowSize, columnSize){
+    calendarWeekHour('#chart',450, 900, 25, 50, results);
+  }
+
+  display_results = function(results, rowSize, columnSize) {
+    //draw_matrix2(results, rowSize, columnSize);
+    output = document.getElementById("output");
+    output.innerHtml += "<br>";
+    for (var x = 0; x < 100; x = x + 1) {
+      output.innerHTML += results[x].toFixed(2) + ", ";
+    }
+    // print a square piece of the array
+    output.innerHTML += "<br>Square Piece<br>";
+    for (var y = 0; y < 10; y++) {
+      for(var x = 0; x < 10; x++) {
+        var printIndex = y * rowSize + x;
+        output.innerHTML += results[printIndex].toFixed(2) + ",";
+      }
+      output.innerHTML += "<br>";
+    }
+
+    output.innerHTML += "<br><br><br>";
+  }
+
+  synchronize = function() {
+    $.ajax({
+            type: 'GET',
+            url: '/synchronize/' + task_id,
+            contentType: false,
+            processData: false,
+            success: function(data, status, jqXHR) {
+              alert(data);
+            },
+        });
+  }
+</script>
+
+
+<script src="/static/js/ping.js" type"text/javascript"></script>
+
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h3> Currently running task node #{{ context.task_id }} </h3>
+  <!-- add a status bar updating about current system state -->
+  <div id="output"> </div>
+</div>
+
+{% endblock %}
+
+{% block matrix %}
+<canvas id="laplace" width="0" height="0">
+</canvas>
+
+<div class="container">
+<div id="chart"></div>
+</div>
+<script type="text/javascript" src="/static/js/grid.js"></script>
+
+
+<script src="/static/js/fill_canvas.js"></script>
+<script>
+  // var test_array = [];
+  // var max = 2000;
+  // for (var i = 0; i < 1024*1024; i++) {
+                         //   x = Math.random()*2000;
+                         //   test_array[i] = x;
+                         // }
+
+                         // var row_size = 1024;
+                         // draw_matrix(test_array, row_size, max);
+                         </script>
+
+{% endblock %}
