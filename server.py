@@ -82,6 +82,8 @@ def get_task_info(task_id):
 def get_data():
     #TODO: Get the specified chunk of data
     #Need to figure out the best way to get sub-data
+
+    #use request.data to get the data from xmlhttprequest. save the data somewhere so the other node can poll for it
     ip = request.remote_addr
     task_id = r.get(ip)
     test_data = {
