@@ -47,7 +47,8 @@ I am a task node
       //var input = new Uint32Array(n);
       var input = new Float32Array(n);
       for ( var i=0; i<n;  i=i+1) {
-        input[i] = Math.random() * 100; //Random number 0..99
+        //input[i] = Math.random() * 100; //Random number 0..99
+        input[i] = i % rowSize;
       }
 
       output.innerHTML += "<br>Vector length = " + n;
@@ -126,6 +127,16 @@ I am a task node
         for (var x = 0; x < 100; x = x + 1) {
           output.innerHTML += outBuffer[x].toFixed(2) + ", ";
         }
+        //print a square piece of the array
+        output.innerHTML += "<br>Square Piece<br>";
+        for (var y = 0; y < 10; y++) {
+          for(var x = 0; x < 10; x++) {
+            var printIndex = y * rowSize + x;
+            output.innerHTML += outBuffer[printIndex].toFixed(2) + ",";
+          }
+          output.innerHTML += "<br>";
+        }
+
         input = outBuffer;
         output.innerHTML += "<br><br><br>";
         var temp = bufIn;
