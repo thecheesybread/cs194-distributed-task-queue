@@ -259,9 +259,9 @@ $(document).ready(function() {
 	host_args = new Array();
 	//in_data.push(
 	out_data = new Array();
-	get_host_args = function() {
+	get_input_data = function() {
 	    var xhr = new XMLHttpRequest();
-	    xhr.open('GET', '/get_host_args/', true); //true means async is true
+	    xhr.open('GET', '/get_input_data/', true); //true means async is true
 	    xhr.responseType = 'arraybuffer';
 
 	    xhr.onload = function(e) {

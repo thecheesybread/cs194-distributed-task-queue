@@ -99,9 +99,10 @@ def heart_beat():
     ip_addr = request.remote_addr
 
 # this is a very important function and based off of each task_id we will return the host args that
-@app.route("/get_host_args/")
-def get_host_args():
-    x = array.array('I', [i for i in range(1024 * 1024)]).tostring()
+@app.route("/get_input_data/")
+def get_input_data():
+    x = array.array('f', [float(i % (1 << 12)) for i in range(1 << 24)]).tostring()
+    #see http://docs.python.org/2/library/array.html
     print 'reached'
     return x
 
