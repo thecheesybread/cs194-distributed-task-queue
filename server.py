@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, abort
 from flask import request
 import redis
 import array
@@ -19,6 +19,7 @@ REDIS SETTINGS"
 
 r = redis.Redis(host='localhost', port=6379, db=0)
 r.set(1, "/static/js/add.js")
+r.rpush('update_data', 0)
 # use as queue
 # use to store current clients and extra information (wsgi is multithreaded and is not guaranteed to store state across different threads, so we use redis to store state)
 
@@ -36,7 +37,7 @@ r.set(1, "/static/js/add.js")
 """
 FLASK CODE
 """
-NUMBER_OF_CLIENTS = 2
+NUMBER_OF_CLIENTS = 1
 @app.route("/")
 def home():
     #return render_template("task.html", context={'task_id':str(request.remote_addr) + '.' + str(int(random.random() * 1000000))})
@@ -104,11 +105,10 @@ def get_data():
 def store_result(task_id, iteration):
     index = get_client_index(task_id)
     data = request.data
-    print result
-    while (iteration * NUMBER_OF_CLIENTS + index < r.llen('update_data') ):
+    while iteration * NUMBER_OF_CLIENTS + index > r.llen('update_data') + 1:
         r.rpush('update_data', 0)
     r.lset('update_data', iteration * NUMBER_OF_CLIENTS + index, data)
-    return "Results have been processed"
+    return data
 
 def get_client_index(task_id):
     for index in range(NUMBER_OF_CLIENTS):
@@ -124,7 +124,8 @@ def get_update_data(task_id, iteration):
     elif index == 1:
         data = r.lindex('update_data', iteration * NUMBER_OF_CLIENTS)
     if data == 0:
-        return 'Data not ready yet'
+        # data is not ready yet and we should wait for the data
+        abort(408)
     else:
         return data
 
@@ -142,6 +143,8 @@ def get_input_data(task_id):
         x = array.array('f', [float(i % (1 << 12)) for i in range(1 << 24)]).tostring()
     elif index == 1:
         x = array.array('f', [float((i % (1 << 12)) + (i << 12)) for i in range(1 << 24)]).tostring()
+    else:
+        x = array.array('f', [float(i % (1 << 12)) for i in range(1 << 24)]).tostring()
     #see http://docs.python.org/2/library/array.html
     print 'reached'
     return x

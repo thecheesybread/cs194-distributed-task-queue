@@ -12,11 +12,13 @@ I am a task node
 <script type="text/javascript">
   $(document).ready(function() {
     task_id = "{{ context.task_id }}";
-    get_input(run_laplace);
+    //get_input(run_laplace);
     synchronize();
-    //dumpCLData();
-    //CL_vectorAdd();
-    //get_host_args();
+    var outBuf = new Float32Array(100);
+    for (var i = 0; i < 100; i++) {
+      outBuf[i] = i;
+    }
+    export_out_data(outBuf, 1);
 
   });
 </script>
@@ -79,17 +81,17 @@ I am a task node
     }
     xhr.send();
   }
+
   export_out_data = function(outBuf, iteration) {
+    alert('/send_result/' + task_id + '/' + iteration);
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/send_result/' + task_id + '/' + iteration, true);
-    xhr.onload = function(e) {
-      alert(e.response);
-    };
     xhr.send(outBuf);
     // do something pretty simple here to send the data out. convert out_data into json and send it out.
     // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Sending_and_Receiving_Binary_Data
     // use that to send xmlhttp data
   }
+
   get_update = function(callback, iteration) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', '/get_update_data/' + task_id + '/' + iteration, true); //true means async is true
@@ -103,6 +105,7 @@ I am a task node
         }
       } else {
         alert("could not load data from server");
+        get_update(callback, iteration);
       }
     }
     xhr.send();
@@ -215,7 +218,7 @@ I am a task node
   }
 
   display_results = function(results, rowSize, columnSize) {
-    draw_matrix2(results, rowSize, columnSize);
+    //draw_matrix2(results, rowSize, columnSize);
     output = document.getElementById("output");
     output.innerHtml += "<br>";
     for (var x = 0; x < 100; x = x + 1) {
