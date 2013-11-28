@@ -5,15 +5,16 @@ I am a task node
 
 
 {% block head %}
-<script id="clLaplace" type="text/x-opencl" src="/static/cl/laplace.cl"></script>
+<!-- fastLaplace is like laplace but only loading and executing the kernel once -->
+<script id="fastLaplace" type="text/x-opencl" src="/static/cl/fast_laplace.cl"></script>
 <script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
 <script type="text/javascript" src="http://mbostock.github.com/d3/d3.v2.js"></script>
 
 <script type="text/javascript">
   $(document).ready(function() {
     task_id = "{{ context.task_id }}";
-    //get_input(run_laplace);
     synchronize();
+    get_input(run_laplace);
     var outBuf = new Float32Array(100);
     for (var i = 0; i < 100; i++) {
       outBuf[i] = i;
@@ -139,7 +140,7 @@ I am a task node
   prepare_laplace = function(input, ctx, devices, cmdQueue, n) {
     //=====================CREATE START BUILDING PROGRAM KERNEL AND ADD ARGUMENTS TO KERNEL=====================
     // Create and build program for the first device
-    var kernelSrc = loadKernel("clLaplace");
+    var kernelSrc = loadKernel("fastLaplace");
     var program = ctx.createProgramWithSource(kernelSrc);
     // Reserve buffers
     var bufSize = n * 4; // size in bytes
@@ -156,7 +157,7 @@ I am a task node
                                             WebCL.CL_PROGRAM_BUILD_LOG));
       throw e;
     }
-    var kernel = program.createKernel ("clLaplace");
+    var kernel = program.createKernel ("fastLaplace");
     //============================INSTANTIATE COMMAND QUEUE AND EXECUTE PROGRAM AND SET LOCAL AND GLOBAL WORK SIZES=====================
     cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
     return [kernel, bufIn, bufOut]
