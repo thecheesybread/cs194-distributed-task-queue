@@ -6,8 +6,8 @@ I am a task node
 
 {% block head %}
 <!-- fastLaplace is like laplace but only loading and executing the kernel once -->
-<script id="fastLaplace" type="text/x-opencl" src="/static/cl/fast_laplace.cl"></script>
-<script id="fastLaplace" type="text/x-opencl" src="/static/cl/fast_laplace.cl"></script>
+<script id="clLaplace" type="text/x-opencl" src="/static/cl/laplace.cl"></script>
+<script id="combineGhost" type="text/x-opencl" src="/static/cl/combine_ghost.cl"></script>
 <script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
 <script type="text/javascript" src="http://mbostock.github.com/d3/d3.v2.js"></script>
 
@@ -141,7 +141,7 @@ I am a task node
   prepare_laplace = function(input, ctx, devices, cmdQueue, n) {
     //=====================CREATE START BUILDING PROGRAM KERNEL AND ADD ARGUMENTS TO KERNEL=====================
     // Create and build program for the first device
-    var kernelSrc = loadKernel("fastLaplace");
+    var kernelSrc = loadKernel("clLaplace");
     var program = ctx.createProgramWithSource(kernelSrc);
     // Reserve buffers
     var bufSize = n * 4; // size in bytes
@@ -158,7 +158,7 @@ I am a task node
                                             WebCL.CL_PROGRAM_BUILD_LOG));
       throw e;
     }
-    var kernel = program.createKernel ("fastLaplace");
+    var kernel = program.createKernel ("clLaplace");
     //============================INSTANTIATE COMMAND QUEUE AND EXECUTE PROGRAM AND SET LOCAL AND GLOBAL WORK SIZES=====================
     cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
     return [kernel, bufIn, bufOut]
