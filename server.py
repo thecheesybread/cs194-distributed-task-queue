@@ -20,6 +20,9 @@ REDIS SETTINGS"
 r = redis.Redis(host='localhost', port=6379, db=0)
 r.set(1, "/static/js/add.js")
 r.rpush('update_data', 0)
+r.rpush('update_data', 0)
+r.rpush('update_data', 0)
+r.rpush('update_data', 0)
 # use as queue
 # use to store current clients and extra information (wsgi is multithreaded and is not guaranteed to store state across different threads, so we use redis to store state)
 
@@ -38,6 +41,7 @@ r.rpush('update_data', 0)
 FLASK CODE
 """
 NUMBER_OF_CLIENTS = 1
+NUMBER_OF_GHOST_CELLS = 40
 @app.route("/")
 def home():
     #return render_template("task.html", context={'task_id':str(request.remote_addr) + '.' + str(int(random.random() * 1000000))})
@@ -79,28 +83,6 @@ def get_task_info(task_id):
     #TODO: return information about the task
     pass
 
-@app.route("/send_data", methods=['GET', 'POST'])
-def receive_data():
-    if request.method == 'POST':
-        results = list(request.json['results'])
-        r.set(str(request.json['task_id'])+":results", results)
-        print "Results stored!"
-        return "Received results!"
-
-@app.route("/data")
-def get_data():
-    #TODO: Get the specified chunk of data
-    #Need to figure out the best way to get sub-data
-
-    #use request.data to get the data from xmlhttprequest. save the data somewhere so the other node can poll for it
-    ip = request.remote_addr
-    task_id = r.get(ip)
-    test_data = {
-        "task_id": task_id,
-        "data": [2, 3],
-    }
-    return jsonify(test_data)
-
 @app.route("/send_result/<string:task_id>/<int:iteration>", methods=['POST'])
 def store_result(task_id, iteration):
     index = get_client_index(task_id)
@@ -141,10 +123,13 @@ def get_input_data(task_id):
     # each processor processes 1 << 24 by 1 << 24 array. there will be a left and right processor sharing their data
     if index == 0:
         x = array.array('f', [float(i % (1 << 12)) for i in range(1 << 24)]).tostring()
-    elif index == 1:
+        ghosts = array.array('f', [float((i % NUMBER_OF_GHOST_CELLS) + (i << 12)) for i in range((1 << 12) * NUMBER_OF_GHOST_CELLS)])
+        r.lset('update_data', 0, ghosts)
+    elif index == 1 or True:
         x = array.array('f', [float((i % (1 << 12)) + (i << 12)) for i in range(1 << 24)]).tostring()
-    else:
-        x = array.array('f', [float(i % (1 << 12)) for i in range(1 << 24)]).tostring()
+        ghosts = array.array('f', [float((i << 12) - (i % NUMBER_OF_GHOST_CELLS)) for i in range((1 << 12) * NUMBER_OF_GHOST_CELLS)])
+        r.lset('update_data', 1, ghosts)
+
     #see http://docs.python.org/2/library/array.html
     print 'reached'
     return x
