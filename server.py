@@ -118,6 +118,7 @@ def heart_beat():
 # this is a very important function and based off of each task_id we will return the host args that
 @app.route("/get_input_data/<string:task_id>")
 def get_input_data(task_id):
+    # assume these already have ghost cells actually!
     index = get_client_index(task_id)
     # starting data is a 1 << 25 BY 1 << 24 array
     # each processor processes 1 << 24 by 1 << 24 array. there will be a left and right processor sharing their data

@@ -1,6 +1,5 @@
 __kernel void fastLaplace (__global float *in,
                          __global float *out,
-                         __global float *ghostOut,
                          int rowSize,
                          int columnSize,
                          int n,
