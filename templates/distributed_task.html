@@ -15,7 +15,7 @@ I am a task node
   $(document).ready(function() {
     task_id = "{{ context.task_id }}";
     synchronize();
-    get_input(run_laplace);
+    get_input(main);
     var outBuf = new Float32Array(100);
     for (var i = 0; i < 100; i++) {
       outBuf[i] = i;
@@ -33,11 +33,12 @@ I am a task node
   var cmdQueue = gpu_vars[2];
 
 
-  // Get input variables to seed laplace transformation
+  /** CONTROL VARIABLES */
   var n = 1 << 24;
   var rowSize = Math.sqrt(n);
   var columnSize = n / rowSize;
-  var numGhostCells = 40;
+  var ghostRowSize = 40;
+  var totalNumIterations = 400;
 
   //Prepare and get variables to run laplace tranformation, only have to execute this once
   var laplace_vars = prepare_laplace(ctx, devices, cmdQueue);
@@ -47,7 +48,25 @@ I am a task node
   var bufOut = laplace_vars[3];
   var ghostBuf = laplace_vars[4];
 
-  run_laplace = function(input) {
+  var ghostOut = new Float32Array(ghostRowSize * columnSize);
+  var ghostIn;
+
+  main = function(input, iteration) {
+    if (iteration == 0) {
+      cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
+    } else if(iteration < totalNumIterations / ghostRowSize) {
+      combineGhostHost(combineGhostKernel, ghostInput, cmdQueue, bufIn, 0); //TODO isRightGhost is the last item and must be set
+    } else {
+      return;
+    }
+    run_laplace();
+    cmdQueue.enqueueReadBuffer (ghostBuf, false, 0, ghostRowSize * columnSize, ghostOut, []);
+    cmdQueue.finish();
+    export_out_data(ghostBuf, i); // TODO FILL IN ACTUAL ITERATION HERE
+    get_update(main, iteration);
+  }
+
+  run_laplace = function() {
     // old input
     /*
       var input = new Float32Array(n);
@@ -55,29 +74,32 @@ I am a task node
       //input[i] = Math.random() * 100; //Random number 0..99
       input[i] = i % rowSize;
       }*/
-    cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
+
+    // TODO DON'T ACTUALLY ENQUEUE WRITE BUFFER EVERY SINGLE TIME. ONLY THE FIRST TIME. SECOND TIME WE WANT TO EXECUTE SHITS
     var startTime = new Date().getTime();
     var iterations = 20;
     var data = [bufOut, bufIn, input];
     document.getElementById("output").innerHTML = "";
 
     for (var i = 0; i < iterations; i++) {
-      data = CL_laplace(kernel, cmdQueue, data[1], data[0], n, rowSize, columnSize);
+      // TODO add isRightGhost parameter to actually reflect if the ghost cells to extract are on the left or right
+      data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, 0, 0); //0 as last argument means do not set ghostBuf with ghost cells
       display_results(data[2], rowSize, columnSize);
-      // sendComputedResultsToServer(data[2], "{{ context.task_id }}", rowSize, columnSize);
     }
+    // TODO add isRightGhost parameter to actually reflect if the ghost cells to extract are on the left or right
+    data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, 0, 1); //1 as last argument means set the ghostBuf with ghost cells to be sent
     var endTime = new Date().getTime();
     alert("Total time: " + (endTime - startTime) + " Total iterations: " + iterations + " Average per iteration: " + (endTime - startTime) / iterations);
   }
 
-  CL_laplace = function (kernel, cmdQueue, bufIn, bufOut, n, rowSize, columnSize) {
+  CL_laplace = function (kernel, cmdQueue, bufIn, bufOut, ghostBuf, isRightGhost, setGhost) {
     //============================GENERATES RANDOM VECTOR==============================
     // All output is written to element by id "output"
     var output = document.getElementById("output");
     try {
       output.innerHTML += "<br>Vector length = " + n;
       var localWS = [16,16];
-      var globalWS = [Math.sqrt(n), Math.sqrt(n)];
+      var globalWS = [Math.sqrt(n) + ghostRowSize, Math.sqrt(n)];
       output.innerHTML += "<br>Global work item size: " + globalWS;
       output.innerHTML += "<br>Local work item size: " + localWS;
       // Create command queue using the first available device
@@ -86,17 +108,21 @@ I am a task node
       // Write the buffer to OpenCL device memory
       kernel.setKernelArg (0, bufIn);
       kernel.setKernelArg (1, bufOut);
-      kernel.setKernelArg (2, rowSize, WebCL.types.UINT);
-      kernel.setKernelArg (3, columnSize, WebCL.types.UINT);
-      kernel.setKernelArg (4, n, WebCL.types.UINT);
+      kernel.setKernelArg (2, ghostBuf);
+      kernel.setKernelArg (3, rowSize, WebCL.types.UINT);
+      kernel.setKernelArg (3, ghostRowSize, WebCL.types.UINT);
+      kernel.setKernelArg (5, columnSize, WebCL.types.UINT);
+      kernel.setKernelArg (6, n, WebCL.types.UINT);
+      kernel.setKernelArg (7, isRightGhost, WebCL.types.UINT);
+      kernel.setKernelArg (8, setGhost, WebCL.types.UINT);
 
       // Execute (enqueue) kernel
       cmdQueue.enqueueNDRangeKernel(kernel, globalWS.length, [],
                                     globalWS, localWS, []);
 
       // Read the result buffer from OpenCL device
-      outBuffer = new Float32Array(n);
-      var bufSize = n * 4; // size in bytes
+      outBuffer = new Float32Array(n + ghostRowSize * columnSize);
+      var bufSize = (n + ghostRowSize * columnSize) * 4; // size in bytes
       cmdQueue.enqueueReadBuffer (bufOut, false, 0, bufSize, outBuffer, []);
       cmdQueue.finish ();
       return [bufIn, bufOut, outBuffer];
@@ -108,8 +134,34 @@ I am a task node
       throw e;
     }
   }
+  combineGhostHost = function (kernel, ghostInput, cmdQueue, bufIn, ghostBuf, isRightGhost) {
+    //============================GENERATES RANDOM VECTOR==============================
+    // All output is written to element by id "output"
+    var output = document.getElementById("output");
+    try {
+      output.innerHTML += "UPDATING GHOST CELLS";
+      var localWS = [16,16];
+      var globalWS = [ghostRowSize, Math.sqrt(n)];
+      ghostBufSize = ghostRowSize * columnSize;
+      cmdQueue.enqueueWriteBuffer (ghostBuf, false, 0, ghostBufSize, ghostInput, []);
+      // Write the buffer to OpenCL device memory
+      kernel.setKernelArg (0, bufIn);
+      kernel.setKernelArg (1, ghostBuf);
+      kernel.setKernelArg (2, rowSize, WebCL.types.UINT);
+      kernel.setKernelArg (3, ghostRowSize, WebCL.types.UINT);
+      kernel.setKernelArg (4, columnSize, WebCL.types.UINT);
+      kernel.setKernelArg (5, isRightGhost, WebCL.types.UINT);
+      // Execute (enqueue) kernel
+      cmdQueue.enqueueNDRangeKernel(kernel, globalWS.length, [],
+                                    globalWS, localWS, []);
 
-
+      cmdQueue.finish ();
+      return [bufIn, bufOut, outBuffer];
+    } catch(e) {
+      output += "<h3>ERROR:</h3><pre style=\"color:red;\">" + e.message + "</pre>";
+      throw e;
+    }
+  }
   get_input = function(callback) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', '/get_input_data/' + task_id, true); //true means async is true
@@ -119,7 +171,8 @@ I am a task node
         var array_buffer = xhr.response;
         if (array_buffer) {
           //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
-          callback(new Float32Array(array_buffer, 0, ((1 << 24) + numGhostCells * columnSize))); // read 1024 * 1024 / 4 ints of 4 bytes
+          input = new Float32Array(array_buffer, 0, ((1 << 24) + ghostRowSize * columnSize)); // read 1024 * 1024 / 4 ints of 4 bytes
+          callback(input, 0); // read 1024 * 1024 / 4 ints of 4 bytes
         }
       } else {
         alert("could not load data from server");
@@ -147,7 +200,7 @@ I am a task node
         var array_buffer = xhr.response;
         if (array_buffer) {
           //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
-          callback(new Float32Array(array_buffer, 0, (1 << 24))); // read 1024 * 1024 / 4 ints of 4 bytes
+          callback(new Float32Array(array_buffer, 0, (1 << 24)), iteration + 1); // read 1024 * 1024 / 4 ints of 4 bytes
         }
       } else {
         alert("could not load data from server");
@@ -216,10 +269,10 @@ I am a task node
     var combineGhostKernel = combineGhostProgram.createKernel ("combineGhost");
 
     // Reserve buffers
-    var bufSize = (n + columnSize * numGhostCells) * 4; // size in bytes
+    var bufSize = (n + columnSize * ghostRowSize) * 4; // size in bytes
     var bufIn = ctx.createBuffer (WebCL.CL_MEM_READ_WRITE, bufSize);
     var bufOut = ctx.createBuffer (WebCL.CL_MEM_READ_WRITE, bufSize);
-    var ghostBufSize = columnSize * numGhostCells * 4;
+    var ghostBufSize = columnSize * ghostRowSize * 4;
     var ghostBuf = ctx.createBuffer (WebCL.CL_MEM_READ_WRITE, ghostBufSize);
 
     //============================INSTANTIATE COMMAND QUEUE AND EXECUTE PROGRAM AND SET LOCAL AND GLOBAL WORK SIZES=====================
