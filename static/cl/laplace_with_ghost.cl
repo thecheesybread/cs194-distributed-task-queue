@@ -11,9 +11,10 @@ __kernel void clLaplace (__global float *in,
 
   unsigned int x = get_global_id(0);
   unsigned int y = get_global_id(1);
-  unsigned int index = x + y * rowSize;
+  int totalRowSize = rowSize + ghostRowSize;
+  unsigned int index = x + y * totalRowSize;
 
-  if (x >= rowSize)
+  if (x >= totalRowSize)
     return;
   if (y >= columnSize)
     return;
@@ -26,19 +27,20 @@ __kernel void clLaplace (__global float *in,
     num += in[index - 1];
     denom+=1;
   }
-  if (x < rowSize - 1) {
+  if (x < totalRowSize - 1) {
     num += in[index + 1];
     denom+=1;
   }
   if (y > 0) {
-    num += in[index - rowSize];
+    num += in[index - totalRowSize];
     denom+=1;
   }
   if (y < columnSize - 1) {
-    num += in[index + rowSize];
+    num += in[index + totalRowSize];
     denom+=1;
   }
   out[index] = num / denom;
+
   if (setGhost == 1) {
     if (isRightGhost == 1) {
       // Ghost cells should be on the right columns of the array meaning we're dealing with left node
