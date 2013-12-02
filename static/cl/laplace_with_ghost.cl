@@ -44,8 +44,8 @@ __kernel void clLaplace (__global float *in,
   if (setGhost == 1) {
     if (isRightGhost == 1) {
       // Ghost cells should be on the right columns of the array meaning we're dealing with left node
-      if (x >= rowSize - 2 * ghostRowSize && x < rowSize - ghostRowSize) {
-        ghostOut[(x - (rowSize - 2 * ghostRowSize)) + y * ghostRowSize] = num/denom;
+      if (x >= rowSize - ghostRowSize && x < rowSize) {
+        ghostOut[(x - (rowSize - ghostRowSize)) + y * ghostRowSize] = num/denom;
       }
     } else if(isRightGhost == 0) {
       // Ghost cell should be on the left columns of the array meaning we're dealing with right node
