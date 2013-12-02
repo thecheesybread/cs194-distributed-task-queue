@@ -156,13 +156,17 @@ def synchronize(task_id):
         r.lset('update_data', 1, 0)
         return 'ready'
     else:
+        r.delete('connected_clients')
         return 'not ready yet'
 
-@app.route("/get_index/<string:task_id>", methods=['GET'])
 def get_client_index(task_id):
     for index in range(NUMBER_OF_CLIENTS):
         if r.lindex('connected_clients', index) == task_id:
-            return str(index)
+            return index
+
+@app.route("/get_index/<string:task_id>", methods=['GET'])
+def get_index(task_id):
+    return str(get_client_index(task_id))
 
 if __name__ == "__main__":
     app.run(threaded=True, host="0.0.0.0") # when we want to test deployment this will make our server externall visible. we have to open up port 5000 though
