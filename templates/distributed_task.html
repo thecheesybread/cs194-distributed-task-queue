@@ -12,60 +12,6 @@ I am a task node
 <script type="text/javascript" src="http://mbostock.github.com/d3/d3.v2.js"></script>
 
 <script type="text/javascript">
-  $(document).ready(function() {
-    task_id = "{{ context.task_id }}";
-    synchronize();
-    get_input(main);
-    var outBuf = new Float32Array(100);
-    for (var i = 0; i < 100; i++) {
-      outBuf[i] = i;
-    }
-    export_out_data(outBuf, 1);
-
-  });
-</script>
-
-<script type="text/javascript">
-  // Get GPU set up data
-  var gpu_vars = prepare_gpu();
-  var ctx = gpu_vars[0];
-  var devices = gpu_vars[1];
-  var cmdQueue = gpu_vars[2];
-
-
-  /** CONTROL VARIABLES */
-  var n = 1 << 24;
-  var rowSize = Math.sqrt(n);
-  var columnSize = n / rowSize;
-  var ghostRowSize = 40;
-  var totalNumIterations = 400;
-
-  //Prepare and get variables to run laplace tranformation, only have to execute this once
-  var laplace_vars = prepare_laplace(ctx, devices, cmdQueue);
-  var laplaceKernel = laplace_vars[0];
-  var combineGhostKernel = laplace_vars[1];
-  var bufIn = laplace_vars[2];
-  var bufOut = laplace_vars[3];
-  var ghostBuf = laplace_vars[4];
-
-  var ghostOut = new Float32Array(ghostRowSize * columnSize);
-  var ghostIn;
-
-  main = function(input, iteration) {
-    if (iteration == 0) {
-      cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
-    } else if(iteration < totalNumIterations / ghostRowSize) {
-      combineGhostHost(combineGhostKernel, ghostInput, cmdQueue, bufIn, 0); //TODO isRightGhost is the last item and must be set
-    } else {
-      return;
-    }
-    run_laplace();
-    cmdQueue.enqueueReadBuffer (ghostBuf, false, 0, ghostRowSize * columnSize, ghostOut, []);
-    cmdQueue.finish();
-    export_out_data(ghostBuf, i); // TODO FILL IN ACTUAL ITERATION HERE
-    get_update(main, iteration);
-  }
-
   run_laplace = function() {
     // old input
     /*
@@ -247,10 +193,10 @@ I am a task node
     } catch(e) {
       alert ("Failed to build WebCL program. Error "
              + laplaceProgram.getProgramBuildInfo (devices[0],
-                                            WebCL.CL_PROGRAM_BUILD_STATUS)
+                                                   WebCL.CL_PROGRAM_BUILD_STATUS)
              + ":  "
              + laplaceProgram.getProgramBuildInfo (devices[0],
-                                            WebCL.CL_PROGRAM_BUILD_LOG));
+                                                   WebCL.CL_PROGRAM_BUILD_LOG));
       throw e;
     }
     try {
@@ -258,10 +204,10 @@ I am a task node
     } catch(e) {
       alert ("Failed to build WebCL program. Error "
              + combineGhostProgram.getProgramBuildInfo (devices[0],
-                                            WebCL.CL_PROGRAM_BUILD_STATUS)
+                                                        WebCL.CL_PROGRAM_BUILD_STATUS)
              + ":  "
              + combineGhostProgram.getProgramBuildInfo (devices[0],
-                                            WebCL.CL_PROGRAM_BUILD_LOG));
+                                                        WebCL.CL_PROGRAM_BUILD_LOG));
       throw e;
     }
 
@@ -306,19 +252,72 @@ I am a task node
 
   synchronize = function() {
     $.ajax({
-            type: 'GET',
-            url: '/synchronize/' + task_id,
-            contentType: false,
-            processData: false,
-            success: function(data, status, jqXHR) {
-              alert(data);
-            },
-        });
+      type: 'GET',
+      url: '/synchronize/' + task_id,
+      contentType: false,
+      processData: false,
+      success: function(data, status, jqXHR) {
+        alert(data);
+      },
+    });
   }
 </script>
+a
+<script type="text/javascript">
+  $(document).ready(function() {
+    // Get GPU set up data
+    var gpu_vars = prepare_gpu();
+    var ctx = gpu_vars[0];
+    var devices = gpu_vars[1];
+    var cmdQueue = gpu_vars[2];
 
 
-<script src="/static/js/ping.js" type"text/javascript"></script>
+    /** CONTROL VARIABLES */
+    var n = 1 << 24;
+    var rowSize = Math.sqrt(n);
+    var columnSize = n / rowSize;
+    var ghostRowSize = 40;
+    var totalNumIterations = 400;
+
+    //Prepare and get variables to run laplace tranformation, only have to execute this once
+    var laplace_vars = prepare_laplace(ctx, devices, cmdQueue);
+    var laplaceKernel = laplace_vars[0];
+    var combineGhostKernel = laplace_vars[1];
+    var bufIn = laplace_vars[2];
+    var bufOut = laplace_vars[3];
+    var ghostBuf = laplace_vars[4];
+
+    var ghostOut = new Float32Array(ghostRowSize * columnSize);
+    var ghostIn;
+
+    main = function(input, iteration) {
+      if (iteration == 0) {
+        cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
+      } else if(iteration < totalNumIterations / ghostRowSize) {
+        combineGhostHost(combineGhostKernel, ghostInput, cmdQueue, bufIn, 0); //TODO isRightGhost is the last item and must be set
+      } else {
+        return;
+      }
+      run_laplace();
+      cmdQueue.enqueueReadBuffer (ghostBuf, false, 0, ghostRowSize * columnSize, ghostOut, []);
+      cmdQueue.finish();
+      export_out_data(ghostBuf, i); // TODO FILL IN ACTUAL ITERATION HERE
+      get_update(main, iteration);
+    }
+    task_id = "{{ context.task_id }}";
+    synchronize();
+    get_input(main);
+    var outBuf = new Float32Array(100);
+    for (var i = 0; i < 100; i++) {
+      outBuf[i] = i;
+    }
+    export_out_data(outBuf, 1);
+
+
+  });
+</script>
+
+<script src="/static/js/ping.js" type="text/javascript"></script>
 
 {% endblock %}
 
@@ -336,7 +335,7 @@ I am a task node
 </canvas>
 
 <div class="container">
-<div id="chart"></div>
+  <div id="chart"></div>
 </div>
 <script type="text/javascript" src="/static/js/grid.js"></script>
 
