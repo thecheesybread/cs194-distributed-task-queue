@@ -16,9 +16,9 @@ __kernel void combineGhost (__global float *in,
 
   if (isRightGhost == 1) {
     // Ghost cells should be on the right columns of the array meaning we're dealing with left node
-    in[(x + rowSize - ghostRowSize) + y * rowSize] = inGhost[x + y * ghostRowSize];
+    in[x + rowSize + y * (rowSize + ghostRowSize)] = inGhost[x + y * ghostRowSize];
   } else if (isRightGhost == 0) {
     // Ghost cell should be on the left columns of the array meaning we're dealing with right node
-    in[x + y * rowSize] = inGhost[x + y * ghostRowSize];
+    in[x + y * (rowSize + ghostRowSize)] = inGhost[x + y * ghostRowSize];
   }
 }
