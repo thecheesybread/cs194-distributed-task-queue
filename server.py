@@ -156,7 +156,6 @@ def synchronize(task_id):
         r.lset('update_data', 1, 0)
         return 'ready'
     else:
-        r.delete('connected_clients')
         return 'not ready yet'
 
 @app.route("/get_index/<string:task_id>", methods=['GET'])
