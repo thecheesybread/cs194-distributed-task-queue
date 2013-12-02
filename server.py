@@ -18,7 +18,8 @@ app.config['DEBUG'] = True
 REDIS SETTINGS"
 """
 
-r = redis.Redis(host='localhost', port=6379, db=0)
+#r = redis.Redis(host='localhost', port=6379, db=0)
+r = redis.Redis(host='10.0.0.37', port=6379, db=0)
 r.set(1, "/static/js/add.js")
 r.rpush('update_data', 0)
 r.rpush('update_data', 0)
