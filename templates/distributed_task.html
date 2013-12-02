@@ -12,6 +12,63 @@ I am a distributed task node
 <script type="text/javascript" src="http://mbostock.github.com/d3/d3.v2.js"></script>
 
 <script type="text/javascript">
+  /** CONTROL VARIABLES */
+  var n = 1 << 24;
+  var rowSize = Math.sqrt(n);
+  var columnSize = n / rowSize;
+  var ghostRowSize = 64;
+  var totalNumIterations = 64;
+</script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    // Get GPU set up data
+    window.gpu_vars = prepare_gpu();
+    window.ctx = gpu_vars[0];
+    window.devices = gpu_vars[1];
+    window.cmdQueue = gpu_vars[2];
+
+    //Prepare and get variables to run laplace tranformation, only have to execute this once
+    window.laplace_vars = prepare_laplace(ctx, devices, cmdQueue);
+    window.laplaceKernel = laplace_vars[0];
+    window.combineGhostKernel = laplace_vars[1];
+    window.bufIn = laplace_vars[2];
+    window.bufOut = laplace_vars[3];
+    window.ghostBuf = laplace_vars[4];
+
+    window.ghostOut = new Float32Array(ghostRowSize * columnSize);
+    window.ghostIn;
+
+    main = function(input, iteration) {
+      if (iteration == 0) {
+        var bufSize = (n + ghostRowSize * columnSize) * 4; // size in bytes
+        cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
+      } else if(iteration < totalNumIterations / ghostRowSize) {
+        combineGhostHost(combineGhostKernel, ghostInput, cmdQueue, bufIn, 0); //TODO isRightGhost is the last item and must be set
+      } else {
+        return;
+      }
+      run_laplace();
+      cmdQueue.enqueueReadBuffer (ghostBuf, false, 0, ghostRowSize * columnSize, ghostOut, []);
+      cmdQueue.finish();
+      export_out_data(ghostBuf, i); // TODO FILL IN ACTUAL ITERATION HERE
+      get_update(main, iteration);
+    }
+    task_id = "{{ context.task_id }}";
+    synchronize();
+    get_input(main);
+    var outBuf = new Float32Array(100);
+    for (var i = 0; i < 100; i++) {
+      outBuf[i] = i;
+    }
+    export_out_data(outBuf, 1);
+
+
+  });
+</script>
+
+
+
+<script type="text/javascript">
   run_laplace = function() {
     // old input
     /*
@@ -23,14 +80,16 @@ I am a distributed task node
 
     // TODO DON'T ACTUALLY ENQUEUE WRITE BUFFER EVERY SINGLE TIME. ONLY THE FIRST TIME. SECOND TIME WE WANT TO EXECUTE SHITS
     var startTime = new Date().getTime();
-    var iterations = 20;
+    var iterations = ghostRowSize;
     var data = [bufOut, bufIn, input];
     document.getElementById("output").innerHTML = "";
 
     for (var i = 0; i < iterations; i++) {
       // TODO add isRightGhost parameter to actually reflect if the ghost cells to extract are on the left or right
       data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, 0, 0); //0 as last argument means do not set ghostBuf with ghost cells
-      display_results(data[2], rowSize, columnSize);
+      output = document.getElementById("output");
+      output.innerHTML += "iteration number " + i;
+      display_results(data[2], rowSize + ghostRowSize, columnSize);
     }
     // TODO add isRightGhost parameter to actually reflect if the ghost cells to extract are on the left or right
     data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, 0, 1); //1 as last argument means set the ghostBuf with ghost cells to be sent
@@ -56,7 +115,7 @@ I am a distributed task node
       kernel.setKernelArg (1, bufOut);
       kernel.setKernelArg (2, ghostBuf);
       kernel.setKernelArg (3, rowSize, WebCL.types.UINT);
-      kernel.setKernelArg (3, ghostRowSize, WebCL.types.UINT);
+      kernel.setKernelArg (4, ghostRowSize, WebCL.types.UINT);
       kernel.setKernelArg (5, columnSize, WebCL.types.UINT);
       kernel.setKernelArg (6, n, WebCL.types.UINT);
       kernel.setKernelArg (7, isRightGhost, WebCL.types.UINT);
@@ -262,61 +321,6 @@ I am a distributed task node
     });
   }
 </script>
-a
-<script type="text/javascript">
-  $(document).ready(function() {
-    // Get GPU set up data
-    var gpu_vars = prepare_gpu();
-    var ctx = gpu_vars[0];
-    var devices = gpu_vars[1];
-    var cmdQueue = gpu_vars[2];
-
-
-    /** CONTROL VARIABLES */
-    var n = 1 << 24;
-    var rowSize = Math.sqrt(n);
-    var columnSize = n / rowSize;
-    var ghostRowSize = 40;
-    var totalNumIterations = 400;
-
-    //Prepare and get variables to run laplace tranformation, only have to execute this once
-    var laplace_vars = prepare_laplace(ctx, devices, cmdQueue);
-    var laplaceKernel = laplace_vars[0];
-    var combineGhostKernel = laplace_vars[1];
-    var bufIn = laplace_vars[2];
-    var bufOut = laplace_vars[3];
-    var ghostBuf = laplace_vars[4];
-
-    var ghostOut = new Float32Array(ghostRowSize * columnSize);
-    var ghostIn;
-
-    main = function(input, iteration) {
-      if (iteration == 0) {
-        cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
-      } else if(iteration < totalNumIterations / ghostRowSize) {
-        combineGhostHost(combineGhostKernel, ghostInput, cmdQueue, bufIn, 0); //TODO isRightGhost is the last item and must be set
-      } else {
-        return;
-      }
-      run_laplace();
-      cmdQueue.enqueueReadBuffer (ghostBuf, false, 0, ghostRowSize * columnSize, ghostOut, []);
-      cmdQueue.finish();
-      export_out_data(ghostBuf, i); // TODO FILL IN ACTUAL ITERATION HERE
-      get_update(main, iteration);
-    }
-    task_id = "{{ context.task_id }}";
-    synchronize();
-    get_input(main);
-    var outBuf = new Float32Array(100);
-    for (var i = 0; i < 100; i++) {
-      outBuf[i] = i;
-    }
-    export_out_data(outBuf, 1);
-
-
-  });
-</script>
-
 <script src="/static/js/ping.js" type="text/javascript"></script>
 
 {% endblock %}
