@@ -34,6 +34,7 @@ I am a distributed task node
     window.bufIn = laplace_vars[2];
     window.bufOut = laplace_vars[3];
     window.ghostBuf = laplace_vars[4];
+    window.outBuffer = new Float32Array(n + ghostRowSize * columnSize);
 
     window.ghostOut = new Float32Array(ghostRowSize * columnSize);
     window.ghostIn;
@@ -88,8 +89,8 @@ I am a distributed task node
       // TODO add isRightGhost parameter to actually reflect if the ghost cells to extract are on the left or right
       data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, 0, 0); //0 as last argument means do not set ghostBuf with ghost cells
       output = document.getElementById("output");
-      output.innerHTML += "\niteration number " + i + "\n";
-      //display_results(data[2], rowSize + ghostRowSize, columnSize);
+      output.innerHTML += "<br>  iteration number " + i + "<br>";
+      display_results(data[2], rowSize + ghostRowSize, columnSize);
     }
     // TODO add isRightGhost parameter to actually reflect if the ghost cells to extract are on the left or right
     data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, 0, 1); //1 as last argument means set the ghostBuf with ghost cells to be sent
@@ -126,7 +127,6 @@ I am a distributed task node
                                     globalWS, localWS, []);
 
       // Read the result buffer from OpenCL device
-      outBuffer = new Float32Array(n + ghostRowSize * columnSize);
       var bufSize = (n + ghostRowSize * columnSize) * 4; // size in bytes
       cmdQueue.enqueueReadBuffer (bufOut, false, 0, bufSize, outBuffer, []);
       cmdQueue.finish ();
@@ -293,20 +293,20 @@ I am a distributed task node
     //draw_matrix2(results, rowSize, columnSize);
     output = document.getElementById("output");
     output.innerHtml += "<br>";
+    var stringBuffer = "";
     for (var x = 0; x < 100; x = x + 1) {
-      output.innerHTML += results[x].toFixed(2) + ", ";
+      stringBuffer += results[x].toFixed(2) + ", ";
     }
     // print a square piece of the array
-    output.innerHTML += "<br>Square Piece<br>";
+    stringBuffer += "<br>Square Piece<br>";
     for (var y = 0; y < 10; y++) {
       for(var x = 0; x < 10; x++) {
         var printIndex = y * rowSize + x;
-        output.innerHTML += results[printIndex].toFixed(2) + ",";
+        stringBuffer += results[printIndex].toFixed(2) + ",";
       }
-      output.innerHTML += "<br>";
+      stringBuffer += "<br>";
     }
-
-    output.innerHTML += "<br><br><br>";
+    output.innerHTML+= stringBuffer + "<br><br><br>";
   }
 
   synchronize = function() {
