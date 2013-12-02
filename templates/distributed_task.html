@@ -88,8 +88,8 @@ I am a distributed task node
       // TODO add isRightGhost parameter to actually reflect if the ghost cells to extract are on the left or right
       data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, 0, 0); //0 as last argument means do not set ghostBuf with ghost cells
       output = document.getElementById("output");
-      output.innerHTML += "iteration number " + i;
-      display_results(data[2], rowSize + ghostRowSize, columnSize);
+      output.innerHTML += "\niteration number " + i + "\n";
+      //display_results(data[2], rowSize + ghostRowSize, columnSize);
     }
     // TODO add isRightGhost parameter to actually reflect if the ghost cells to extract are on the left or right
     data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, 0, 1); //1 as last argument means set the ghostBuf with ghost cells to be sent
