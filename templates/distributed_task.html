@@ -17,7 +17,7 @@ I am a distributed task node
   var rowSize = Math.sqrt(n);
   var columnSize = n / rowSize;
   var ghostRowSize = 64;
-  var totalNumIterations = 64;
+  var totalNumIterations = 256;
 </script>
 <script type="text/javascript">
   $(document).ready(function() {
@@ -44,14 +44,15 @@ I am a distributed task node
         var bufSize = (n + ghostRowSize * columnSize) * 4; // size in bytes
         cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
       } else if(iteration < totalNumIterations / ghostRowSize) {
-        combineGhostHost(combineGhostKernel, ghostInput, cmdQueue, bufIn, 0); //TODO isRightGhost is the last item and must be set
+        combineGhostHost(combineGhostKernel, input, cmdQueue, bufIn, 0); //TODO isRightGhost is the last item and must be set
       } else {
         return;
       }
       run_laplace();
       cmdQueue.enqueueReadBuffer (ghostBuf, false, 0, ghostRowSize * columnSize, ghostOut, []);
       cmdQueue.finish();
-      export_out_data(ghostBuf, i); // TODO FILL IN ACTUAL ITERATION HERE
+      alert(ghostOut[0] + ", " + ghostOut[1]);
+      export_out_data(ghostOut, iteration); // TODO FILL IN ACTUAL ITERATION HERE
       get_update(main, iteration);
     }
     task_id = "{{ context.task_id }}";
@@ -82,6 +83,7 @@ I am a distributed task node
     // TODO DON'T ACTUALLY ENQUEUE WRITE BUFFER EVERY SINGLE TIME. ONLY THE FIRST TIME. SECOND TIME WE WANT TO EXECUTE SHITS
     var startTime = new Date().getTime();
     var iterations = ghostRowSize;
+    //var iterations = 1;
     var data = [bufOut, bufIn, input];
     document.getElementById("output").innerHTML = "";
 
@@ -139,7 +141,7 @@ I am a distributed task node
       throw e;
     }
   }
-  combineGhostHost = function (kernel, ghostInput, cmdQueue, bufIn, ghostBuf, isRightGhost) {
+  combineGhostHost = function (kernel, ghostInput, cmdQueue, bufIn, isRightGhost) {
     //============================GENERATES RANDOM VECTOR==============================
     // All output is written to element by id "output"
     var output = document.getElementById("output");
@@ -205,7 +207,7 @@ I am a distributed task node
         var array_buffer = xhr.response;
         if (array_buffer) {
           //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
-          callback(new Float32Array(array_buffer, 0, (1 << 24)), iteration + 1); // read 1024 * 1024 / 4 ints of 4 bytes
+          callback(new Float32Array(array_buffer, 0, ghostRowSize * columnSize), iteration + 1); // read 1024 * 1024 / 4 ints of 4 bytes
         }
       } else {
         alert("could not load data from server");

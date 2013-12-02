@@ -1,3 +1,4 @@
+# FIX THE FIX THIS LATERS
 from flask import Flask, render_template, jsonify, abort
 from flask import request
 import redis
@@ -85,16 +86,20 @@ def get_task_info(task_id):
     #TODO: return information about the task
     pass
 
+RESULT = ['x']
 @app.route("/send_result/<string:task_id>/<int:iteration>", methods=['POST'])
 def store_result(task_id, iteration):
     index = get_client_index(task_id)
     data = request.data
-    while iteration * NUMBER_OF_CLIENTS + index > r.llen('update_data') + 1:
+    RESULT[0] = data
+    print data
+    while (iteration - 1) * NUMBER_OF_CLIENTS + index > r.llen('update_data') + 1:
         r.rpush('update_data', 0)
-    r.lset('update_data', iteration * NUMBER_OF_CLIENTS + index, data)
+    r.lset('update_data', (iteration - 1) * NUMBER_OF_CLIENTS + index, data)
     return data
 
 def get_client_index(task_id):
+    return 0 # FIX THIS LATER
     for index in range(NUMBER_OF_CLIENTS):
         if r.lindex('connected_clients', index) == task_id:
             return index
@@ -104,13 +109,19 @@ def get_client_index(task_id):
 def get_update_data(task_id, iteration):
     index = get_client_index(task_id)
     if index == 0:
-        data = r.lindex('update_data', iteration * NUMBER_OF_CLIENTS + 1)
+        data = r.lindex('update_data', (iteration - 1) * NUMBER_OF_CLIENTS + 1)
     elif index == 1:
-        data = r.lindex('update_data', iteration * NUMBER_OF_CLIENTS)
-    if data == 0:
+        data = r.lindex('update_data', (iteration - 1) * NUMBER_OF_CLIENTS)
+    data = r.lindex('update_data', (iteration - 1) * NUMBER_OF_CLIENTS) # FIX THIS LATER
+    if data == 0 or data is None:
         # data is not ready yet and we should wait for the data
         abort(408)
     else:
+        return RESULT[0] # FIX THIS LATER
+        x = array.array('f')
+        print x.fromstring(data)
+        print data
+        print 'reached'
         return data
 
 @app.route("/heart_beat")
