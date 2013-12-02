@@ -150,12 +150,16 @@ def synchronize(task_id):
     r.zadd('current_clients', task_id,  long(current_time))
     synced_clients = set(r.zrangebyscore('current_clients', long(current_time - 15), long(current_time + 1))) # get clients that have synchronized within last 5 seconds
     if len(synced_clients) == NUMBER_OF_CLIENTS:
-        r.rpush('connected_clients', task_id)
+        r.rpush('almost_connected_clients', task_id)
+        if r.llen('almost_connected_clients') == NUMBER_OF_CLIENTS:
+            r.delete('connected_clients')
+            for i in range(NUMBER_OF_CLIENTS):
+                r.rpush('connected_clients', r.lindex('almost_connected_clients', i))
+            r.delete('almost_connected_clients')
         r.lset('update_data', 0, 0)
         r.lset('update_data', 1, 0)
         return 'ready'
     else:
-        r.delete('connected_clients')
         return 'not ready yet'
 
 
