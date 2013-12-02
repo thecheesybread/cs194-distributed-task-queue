@@ -62,6 +62,8 @@ I am a task node
       display_results(data[2], rowSize, columnSize);
       // sendComputedResultsToServer(data[2], "{{ context.task_id }}", rowSize, columnSize);
     }
+
+    draw_matrix(data[2], rowSize, rowSize);
     var endTime = new Date().getTime();
     alert("Total time: " + (endTime - startTime) + " Total iterations: " + iterations + " Average per iteration: " + (endTime - startTime) / iterations);
   }
