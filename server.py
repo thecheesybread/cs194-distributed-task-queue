@@ -46,7 +46,7 @@ ROW_SIZE = 1 << 12
 COLUMN_SIZE = 1 << 12
 TOTAL_CELLS = 1 << 24
 @app.route("/")
-def home():
+def index():
     #return render_template("task.html", context={'task_id':str(request.remote_addr) + '.' + str(int(random.random() * 1000000))})
     return render_template("task.html", context={'task_id':str(request.remote_addr)})
 
