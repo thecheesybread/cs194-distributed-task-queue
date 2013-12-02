@@ -90,7 +90,7 @@ def store_result(task_id, iteration):
     index = get_client_index(task_id)
     data = request.data
     #RESULTS[index] = data
-    r.lset('update_data', index, data)
+    r.lset('update_data', index + iteration * NUMBER_OF_CLIENTS, data)
     return data
 
 
@@ -99,15 +99,15 @@ def store_result(task_id, iteration):
 def get_update_data(task_id, iteration):
     index = get_client_index(task_id)
     if index == 0:
-        data = r.lindex('update_data', 1)
+        data = r.lindex('update_data', 1 + iteration * NUMBER_OF_CLIENTS)
         #data = RESULTS[1]
         #RESULTS[1] = 0
-        r.lset('update_data', 1, 0)
+        #r.lset('update_data', 1, 0)
     elif index == 1:
-        data = r.lindex('update_data', 0)
+        data = r.lindex('update_data', 0 + iteration * NUMBER_OF_CLIENTS)
         #data = RESULTS[0]
         #RESULTS[0] = 0
-        r.lset('update_data', 0, 0)
+        #r.lset('update_data', 0, 0)
     if data == 0 or data == '0' or data is None:
         # data is not ready yet and we should wait for the data
         abort(408)
@@ -152,8 +152,9 @@ def synchronize(task_id):
             for i in range(NUMBER_OF_CLIENTS):
                 r.rpush('connected_clients', r.lindex('almost_connected_clients', i))
             r.delete('almost_connected_clients')
-        r.lset('update_data', 0, 0)
-        r.lset('update_data', 1, 0)
+            r.delete('update_data')
+            for i in range(100):
+                r.rpush('update_data', 0)
         return 'ready'
     else:
         r.delete('connected_clients')
