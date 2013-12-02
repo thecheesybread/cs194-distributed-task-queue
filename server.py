@@ -127,11 +127,11 @@ def get_input_data(task_id):
     index = get_client_index(task_id)
     # starting data is a 1 << 25 BY 1 << 24 array
     # each processor processes 1 << 24 by 1 << 24 array. there will be a left and right processor sharing their data
-    if index == 0:
+    if index == 1:
         x = array.array('f', [float(i % (COLUMN_SIZE + NUMBER_OF_GHOST_CELLS)) for i in range(TOTAL_CELLS + NUMBER_OF_GHOST_CELLS * COLUMN_SIZE)]).tostring()
         #ghosts = array.array('f', [float((i % NUMBER_OF_GHOST_CELLS) + (i << 12)) for i in range((1 << 12) * NUMBER_OF_GHOST_CELLS)])
         #r.lset('update_data', 0, ghosts)
-    elif index == 1 or True:
+    elif index == 0 or True:
         x = array.array('f', [float((i % (COLUMN_SIZE + NUMBER_OF_GHOST_CELLS)) + (COLUMN_SIZE + NUMBER_OF_GHOST_CELLS)) for i in range(TOTAL_CELLS + NUMBER_OF_GHOST_CELLS * COLUMN_SIZE)]).tostring()
         #ghosts = array.array('f', [float((i << 12) - (i % NUMBER_OF_GHOST_CELLS)) for i in range((1 << 12) * NUMBER_OF_GHOST_CELLS)])
         #r.lset('update_data', 1, ghosts)
