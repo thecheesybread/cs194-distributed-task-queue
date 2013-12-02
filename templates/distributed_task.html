@@ -204,7 +204,7 @@ I am a distributed task node
 
   get_update = function(callback, iteration) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/get_update_data/' + task_id + '/' + iteration, false); //true means async is true
+    xhr.open('GET', '/get_update_data/' + task_id + '/' + iteration, true); //true means async is true
     xhr.responseType = 'arraybuffer';
     xhr.onload = function(e) {
       if (this.status == 200) {
