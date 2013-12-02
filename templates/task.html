@@ -12,6 +12,8 @@ I am a task node
 <script type="text/javascript">
   $(document).ready(function() {
     task_id = "{{ context.task_id }}";
+    var n = 1 << 24;
+    window.outBuffer = new Float32Array(n);
     get_input(run_laplace);
     synchronize();
     var outBuf = new Float32Array(100);
@@ -187,7 +189,7 @@ I am a task node
                                     globalWS, localWS, []);
 
       // Read the result buffer from OpenCL device
-      outBuffer = new Float32Array(n);
+
       var bufSize = n * 4; // size in bytes
       cmdQueue.enqueueReadBuffer (bufOut, false, 0, bufSize, outBuffer, []);
       cmdQueue.finish ();
@@ -221,20 +223,20 @@ I am a task node
     //draw_matrix2(results, rowSize, columnSize);
     output = document.getElementById("output");
     output.innerHtml += "<br>";
+    var stringBuffer = "";
     for (var x = 0; x < 100; x = x + 1) {
-      output.innerHTML += results[x].toFixed(2) + ", ";
+      stringBuffer += results[x].toFixed(2) + ", ";
     }
     // print a square piece of the array
-    output.innerHTML += "<br>Square Piece<br>";
+    stringBuffer += "<br>Square Piece<br>";
     for (var y = 0; y < 10; y++) {
       for(var x = 0; x < 10; x++) {
         var printIndex = y * rowSize + x;
-        output.innerHTML += results[printIndex].toFixed(2) + ",";
+        stringBuffer += results[printIndex].toFixed(2) + ",";
       }
-      output.innerHTML += "<br>";
+      stringBuffer += "<br>";
     }
-
-    output.innerHTML += "<br><br><br>";
+    output.innerHTML+= stringBuffer + "<br><br><br>";
   }
 
   synchronize = function() {
