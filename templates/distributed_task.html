@@ -216,7 +216,7 @@ I am a distributed task node
       }
     }
     xhr.onreadystatechange = function(e) {
-      if (this.status != 200) {
+      if (this.status == 408 && this.readyState == 4) {
         console.log("could not load data from server " + this.status);
         get_update(callback, iteration);
       }
