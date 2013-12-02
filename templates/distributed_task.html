@@ -44,7 +44,7 @@ I am a distributed task node
         var bufSize = (n + ghostRowSize * columnSize) * 4; // size in bytes
         cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
       } else if(iteration < totalNumIterations / ghostRowSize) {
-        combineGhostHost(combineGhostKernel, input, cmdQueue, bufIn, 0); //TODO isRightGhost is the last item and must be set
+        combineGhostHost(combineGhostKernel, input, cmdQueue, bufIn, index); //TODO isRightGhost is the last item and must be set
       } else {
         return;
       }
@@ -56,6 +56,8 @@ I am a distributed task node
     }
     task_id = "{{ context.task_id }}";
     while (!synchronize()){};
+    sleep(2000);
+    window.index = parseInt(get_index());
     get_input(main);
 
 
@@ -334,6 +336,30 @@ I am a distributed task node
     });
     return synchronized;
   }
+  get_index = function() {
+    index = false;
+    $.ajax({
+      type: 'GET',
+      url: '/get_index/' + task_id,
+      contentType: false,
+      processData: false,
+      async: false,
+      success: function(data, status, jqXHR) {
+        index = data;
+      },
+    });
+    return index;
+  }
+
+  function sleep(milliseconds) {
+    var start = new Date().getTime();
+    for (var i = 0; i < 1e7; i++) {
+      if ((new Date().getTime() - start) > milliseconds){
+        break;
+      }
+    }
+  }
+
 </script>
 <script src="/static/js/ping.js" type="text/javascript"></script>
 
