@@ -12,7 +12,7 @@ I am a task node
 <script type="text/javascript">
   $(document).ready(function() {
     task_id = "{{ context.task_id }}";
-    //get_input(run_laplace);
+    get_input(run_laplace);
     synchronize();
     var outBuf = new Float32Array(100);
     for (var i = 0; i < 100; i++) {

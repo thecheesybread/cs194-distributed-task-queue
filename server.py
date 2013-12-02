@@ -50,9 +50,8 @@ def home():
     #return render_template("task.html", context={'task_id':str(request.remote_addr) + '.' + str(int(random.random() * 1000000))})
     return render_template("task.html", context={'task_id':str(request.remote_addr)})
 
-
 @app.route("/distributed")
-def home():
+def distributed():
     return render_template("distributed_task.html", context={'task_id':request.remote_addr})
 
 
