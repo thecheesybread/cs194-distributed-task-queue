@@ -51,19 +51,21 @@ I am a distributed task node
       run_laplace();
       cmdQueue.enqueueReadBuffer (ghostBuf, false, 0, ghostRowSize * columnSize, ghostOut, []);
       cmdQueue.finish();
-      alert(ghostOut[0] + ", " + ghostOut[1]);
       export_out_data(ghostOut, iteration); // TODO FILL IN ACTUAL ITERATION HERE
       get_update(main, iteration);
     }
     task_id = "{{ context.task_id }}";
-    synchronize();
+    while (!synchronize()){};
     get_input(main);
+
+
+/**
     var outBuf = new Float32Array(100);
     for (var i = 0; i < 100; i++) {
       outBuf[i] = i;
     }
-    export_out_data(outBuf, 1);
-
+    //export_out_data(outBuf, 1);
+*/
 
   });
 </script>
@@ -97,7 +99,7 @@ I am a distributed task node
     // TODO add isRightGhost parameter to actually reflect if the ghost cells to extract are on the left or right
     data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, 0, 1); //1 as last argument means set the ghostBuf with ghost cells to be sent
     var endTime = new Date().getTime();
-    alert("Total time: " + (endTime - startTime) + " Total iterations: " + iterations + " Average per iteration: " + (endTime - startTime) / iterations);
+    console.log("Total time: " + (endTime - startTime) + " Total iterations: " + iterations + " Average per iteration: " + (endTime - startTime) / iterations);
   }
 
   CL_laplace = function (kernel, cmdQueue, bufIn, bufOut, ghostBuf, isRightGhost, setGhost) {
@@ -189,7 +191,7 @@ I am a distributed task node
   }
 
   export_out_data = function(outBuf, iteration) {
-    alert('/send_result/' + task_id + '/' + iteration);
+    console.log("current on iteration " + iteration);
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/send_result/' + task_id + '/' + iteration, true);
     xhr.send(outBuf);
@@ -209,8 +211,11 @@ I am a distributed task node
           //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
           callback(new Float32Array(array_buffer, 0, ghostRowSize * columnSize), iteration + 1); // read 1024 * 1024 / 4 ints of 4 bytes
         }
-      } else {
-        alert("could not load data from server");
+      }
+    }
+    xhr.onreadystatechange = function(e) {
+      if (this.status != 200) {
+        console.log("could not load data from server");
         get_update(callback, iteration);
       }
     }
@@ -312,15 +317,22 @@ I am a distributed task node
   }
 
   synchronize = function() {
+    synchronized = false;
     $.ajax({
       type: 'GET',
       url: '/synchronize/' + task_id,
       contentType: false,
       processData: false,
+      async: false,
       success: function(data, status, jqXHR) {
-        alert(data);
+        if (data == "ready") {
+          synchronized = true;
+        } else {
+          synchronized = false;
+        }
       },
     });
+    return synchronized;
   }
 </script>
 <script src="/static/js/ping.js" type="text/javascript"></script>

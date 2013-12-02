@@ -22,8 +22,6 @@ r = redis.Redis(host='localhost', port=6379, db=0)
 r.set(1, "/static/js/add.js")
 r.rpush('update_data', 0)
 r.rpush('update_data', 0)
-r.rpush('update_data', 0)
-r.rpush('update_data', 0)
 # use as queue
 # use to store current clients and extra information (wsgi is multithreaded and is not guaranteed to store state across different threads, so we use redis to store state)
 
@@ -41,7 +39,7 @@ r.rpush('update_data', 0)
 """
 FLASK CODE
 """
-NUMBER_OF_CLIENTS = 1
+NUMBER_OF_CLIENTS = 2
 NUMBER_OF_GHOST_CELLS = 64
 ROW_SIZE = 1 << 12
 COLUMN_SIZE = 1 << 12
@@ -86,42 +84,37 @@ def get_task_info(task_id):
     #TODO: return information about the task
     pass
 
-RESULT = ['x']
 @app.route("/send_result/<string:task_id>/<int:iteration>", methods=['POST'])
 def store_result(task_id, iteration):
     index = get_client_index(task_id)
     data = request.data
-    RESULT[0] = data
-    print data
-    while (iteration - 1) * NUMBER_OF_CLIENTS + index > r.llen('update_data') + 1:
-        r.rpush('update_data', 0)
-    r.lset('update_data', (iteration - 1) * NUMBER_OF_CLIENTS + index, data)
+    #RESULTS[index] = data
+    r.lset('update_data', index, data)
     return data
 
 def get_client_index(task_id):
-    return 0 # FIX THIS LATER
     for index in range(NUMBER_OF_CLIENTS):
         if r.lindex('connected_clients', index) == task_id:
             return index
 
-
+#RESULTS = [0, 0]
 @app.route("/get_update_data/<string:task_id>/<int:iteration>")
 def get_update_data(task_id, iteration):
     index = get_client_index(task_id)
     if index == 0:
-        data = r.lindex('update_data', (iteration - 1) * NUMBER_OF_CLIENTS + 1)
+        data = r.lindex('update_data', 1)
+        #data = RESULTS[1]
+        #RESULTS[1] = 0
+        r.lset('update_data', 1, 0)
     elif index == 1:
-        data = r.lindex('update_data', (iteration - 1) * NUMBER_OF_CLIENTS)
-    data = r.lindex('update_data', (iteration - 1) * NUMBER_OF_CLIENTS) # FIX THIS LATER
-    if data == 0 or data is None:
+        data = r.lindex('update_data', 0)
+        #data = RESULTS[0]
+        #RESULTS[0] = 0
+        r.lset('update_data', 0, 0)
+    if data == 0 or data == '0' or data is None:
         # data is not ready yet and we should wait for the data
         abort(408)
     else:
-        return RESULT[0] # FIX THIS LATER
-        x = array.array('f')
-        print x.fromstring(data)
-        print data
-        print 'reached'
         return data
 
 @app.route("/heart_beat")
@@ -157,6 +150,8 @@ def synchronize(task_id):
     synced_clients = set(r.zrangebyscore('current_clients', long(current_time - 15), long(current_time + 1))) # get clients that have synchronized within last 5 seconds
     if len(synced_clients) == NUMBER_OF_CLIENTS:
         r.rpush('connected_clients', task_id)
+        r.lset('update_data', 0, 0)
+        r.lset('update_data', 1, 0)
         return 'ready'
     else:
         r.delete('connected_clients')
@@ -164,5 +159,5 @@ def synchronize(task_id):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0") # when we want to test deployment this will make our server externall visible. we have to open up port 5000 though
+    app.run(threaded=True, host="0.0.0.0") # when we want to test deployment this will make our server externall visible. we have to open up port 5000 though
     #app.run()
