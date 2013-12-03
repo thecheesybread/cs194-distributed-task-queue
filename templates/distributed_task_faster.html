@@ -91,7 +91,7 @@ I am a distributed task node
       window.worker = new Worker('/static/js/update_script.js');
       window.worker.postMessage("" + iteration);
       window.worker.onmessage = function(e) {
-        window.ghostIn = e.data;
+        window.ghostIn = new Float32Array(e.data, 0, ghostRowSize * columnSize);
         window.ghostSet = true;
       }
       //get_update(iteration);

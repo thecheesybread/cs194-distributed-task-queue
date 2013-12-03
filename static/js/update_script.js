@@ -2,7 +2,7 @@ setData = false;
 data = null;
 get_update = function(iteration) {
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/get_update_data/' + task_id + '/' + iteration, true); //true means async is true
+  xhr.open('GET', '/get_update_data/' + '127.0.0.1' + '/' + iteration, true); //true means async is true
   xhr.responseType = 'arraybuffer';
   xhr.onload = function(e) {
     if (this.status == 200) {
@@ -12,13 +12,13 @@ get_update = function(iteration) {
         //console.log("Time to load update:" + ((new Date()).getTime() - window.startUpdate));
         //window.time_to_load_update.push((new Date()).getTime() - window.startUpdate);
         ghostIn = new Float32Array(array_buffer, 0, ghostRowSize * columnSize);
-        postMessage(ghostIn);
+        postMessage(array_buffer);
       }
     }
   }
   xhr.onreadystatechange = function(e) {
     if (this.status != 200 && this.readyState == 4) {
-      console.log("could not load data from server " + this.status);
+      //console.log("could not load data from server " + this.status);
       get_update(iteration);
     }
   }
