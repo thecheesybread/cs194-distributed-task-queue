@@ -102,7 +102,7 @@ I am a distributed task node
       data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, index, 0); //0 as last argument means do not set ghostBuf with ghost cells
       output = document.getElementById("output");
       output.innerHTML += "<br>  iteration number " + i + "<br>";
-      display_results(data[2], rowSize + ghostRowSize, columnSize);
+      //display_results(data[2], rowSize + ghostRowSize, columnSize);
     }
     // TODO add isRightGhost parameter to actually reflect if the ghost cells to extract are on the left or right
     data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, index, 1); //1 as last argument means set the ghostBuf with ghost cells to be sent
