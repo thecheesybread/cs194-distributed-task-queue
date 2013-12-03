@@ -157,7 +157,7 @@ def synchronize(task_id):
                 r.rpush('connected_clients', r.lindex('almost_connected_clients', i))
             r.delete('almost_connected_clients')
             r.delete('update_data')
-            for i in range(100):
+            for i in range(200):
                 r.rpush('update_data', 0)
         return 'ready'
     else:

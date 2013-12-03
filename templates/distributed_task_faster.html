@@ -168,7 +168,7 @@ I am a distributed task node
     try {
       output.innerHTML += "<br>Vector length = " + n;
       var localWS = [16,16];
-      var globalWS = [Math.sqrt(n) + ghostRowSize, Math.sqrt(n)];
+      var globalWS = [rowSize + ghostRowSize, columnSize];
       output.innerHTML += "<br>Global work item size: " + globalWS;
       output.innerHTML += "<br>Local work item size: " + localWS;
       // Create command queue using the first available device
@@ -209,7 +209,7 @@ I am a distributed task node
     try {
       output.innerHTML += "UPDATING GHOST CELLS";
       var localWS = [16,16];
-      var globalWS = [ghostRowSize, Math.sqrt(n)];
+      var globalWS = [ghostRowSize, columnSize];
       ghostBufSize = ghostRowSize * columnSize;
       cmdQueue.enqueueWriteBuffer (ghostBuf, false, 0, ghostBufSize, ghostInput, []);
       // Write the buffer to OpenCL device memory
