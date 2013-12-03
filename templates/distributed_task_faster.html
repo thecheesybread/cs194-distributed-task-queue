@@ -40,6 +40,11 @@ I am a distributed task node
 
     window.ghostOut = new Float32Array(ghostRowSize * columnSize);
     window.ghostIn;
+    window.worker = new Worker('/static/js/update_script.js');
+    window.worker.onmessage = function(e) {
+        window.ghostIn = new Float32Array(e.data, 0, ghostRowSize * columnSize);
+        window.ghostSet = true;
+      }
 
     window.time_to_load_update = [];
     window.total_iterations = [];
@@ -88,12 +93,8 @@ I am a distributed task node
         return;
       }
       window.ghostSet = false;
-      window.worker = new Worker('/static/js/update_script.js');
       window.worker.postMessage("" + iteration);
-      window.worker.onmessage = function(e) {
-        window.ghostIn = new Float32Array(e.data, 0, ghostRowSize * columnSize);
-        window.ghostSet = true;
-      }
+
       //get_update(iteration);
       run_laplace();
       cmdQueue.enqueueReadBuffer (ghostBuf, false, 0, ghostRowSize * columnSize, ghostOut, []);

@@ -19,7 +19,7 @@ get_update = function() {
   xhr.onreadystatechange = function(e) {
     if (this.status != 200 && this.readyState == 4) {
       //console.log("could not load data from server " + this.status);
-      setTimeout(get_update(), 100);
+      setTimeout(get_update, 100);
     }
   }
   xhr.send();
