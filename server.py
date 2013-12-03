@@ -44,7 +44,7 @@ NUMBER_OF_CLIENTS = 2
 NUMBER_OF_GHOST_CELLS = 64
 ROW_SIZE = 1 << 12
 COLUMN_SIZE = 1 << 12
-TOTAL_CELLS = 1 << 24
+TOTAL_CELLS = ROW_SIZE * COLUMN_SIZE
 @app.route("/")
 def index():
     #return render_template("task.html", context={'task_id':str(request.remote_addr) + '.' + str(int(random.random() * 1000000))})

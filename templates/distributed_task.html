@@ -14,8 +14,9 @@ I am a distributed task node
 <script type="text/javascript">
   /** CONTROL VARIABLES */
   var n = 1 << 24;
-  var rowSize = Math.sqrt(n);
-  var columnSize = n / rowSize;
+  var columnSize = 1 << 12;
+  var rowSize = n / columnSize;
+
   var ghostRowSize = 64;
   var totalNumIterations = 1024;
 </script>
