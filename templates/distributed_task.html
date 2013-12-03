@@ -227,7 +227,7 @@ I am a distributed task node
         var array_buffer = xhr.response;
         if (array_buffer) {
           //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
-          input = new Float32Array(array_buffer, 0, ((1 << 24) + ghostRowSize * columnSize)); // read 1024 * 1024 / 4 ints of 4 bytes
+          input = new Float32Array(array_buffer, 0, ((rowSize * columnSize) + ghostRowSize * columnSize)); // read 1024 * 1024 / 4 ints of 4 bytes
           callback(input, 0); // read 1024 * 1024 / 4 ints of 4 bytes
         }
         console.log("Time to get input data:" + ((new Date()).getTime() - window.startGetInput));

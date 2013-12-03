@@ -19,7 +19,7 @@ REDIS SETTINGS"
 """
 
 #r = redis.Redis(host='localhost', port=6379, db=0)
-r = redis.Redis(host='10.0.0.37', port=6379, db=0)
+r = redis.Redis(host='10.0.0.12', port=6379, db=0)
 r.set(1, "/static/js/add.js")
 r.rpush('update_data', 0)
 r.rpush('update_data', 0)
@@ -41,8 +41,8 @@ r.rpush('update_data', 0)
 FLASK CODE
 """
 NUMBER_OF_CLIENTS = 2
-NUMBER_OF_GHOST_CELLS = 64
-ROW_SIZE = 1 << 12
+NUMBER_OF_GHOST_CELLS = 32
+ROW_SIZE = 1536 #1 << 12
 COLUMN_SIZE = 1 << 12
 TOTAL_CELLS = ROW_SIZE * COLUMN_SIZE
 @app.route("/")
