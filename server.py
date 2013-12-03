@@ -52,7 +52,11 @@ def index():
 
 @app.route("/distributed")
 def distributed():
-    return render_template("distributed_task.html", context={'task_id':request.remote_addr})
+    return render_template("distributed_task.html", context={'task_id':request.remote_addr, 'row_size': ROW_SIZE, 'column_size': COLUMN_SIZE, 'num_ghost_cells': NUMBER_OF_GHOST_CELLS, 'n' : TOTAL_CELLS})
+
+@app.route("/distributed_faster")
+def distributed_faster():
+    return render_template("distributed_task_faster.html", context={'task_id':request.remote_addr, 'row_size': ROW_SIZE, 'column_size': COLUMN_SIZE, 'num_ghost_cells': NUMBER_OF_GHOST_CELLS, 'n': TOTAL_CELLS})
 
 
 @app.route("/pong")
