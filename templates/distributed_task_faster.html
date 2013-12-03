@@ -10,6 +10,7 @@ I am a distributed task node
 <script id="combineGhost" type="text/x-opencl" src="/static/cl/combine_ghost.cl"></script>
 <script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
 <script type="text/javascript" src="http://mbostock.github.com/d3/d3.v2.js"></script>
+<script type="text/javascript" src="static/js/update_script.js"></script>
 
 <script type="text/javascript">
   /** CONTROL VARIABLES */
@@ -87,7 +88,13 @@ I am a distributed task node
         return;
       }
       window.ghostSet = false;
-      get_update(iteration);
+      window.worker = new Worker('update_script.js');
+      window.worker.postMessage("" + iteration);
+      window.worker.onmessage = function(e) {
+        window.ghostIn = e.data;
+        window.ghostSet = true;
+      }
+      //get_update(iteration);
       run_laplace();
       cmdQueue.enqueueReadBuffer (ghostBuf, false, 0, ghostRowSize * columnSize, ghostOut, []);
       cmdQueue.finish();
@@ -258,31 +265,6 @@ I am a distributed task node
     // do something pretty simple here to send the data out. convert out_data into json and send it out.
     // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Sending_and_Receiving_Binary_Data
     // use that to send xmlhttp data
-  }
-
-  get_update = function(iteration) {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/get_update_data/' + task_id + '/' + iteration, true); //true means async is true
-    xhr.responseType = 'arraybuffer';
-    xhr.onload = function(e) {
-      if (this.status == 200) {
-        var array_buffer = xhr.response;
-        if (array_buffer) {
-          //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
-          console.log("Time to load update:" + ((new Date()).getTime() - window.startUpdate));
-          window.time_to_load_update.push((new Date()).getTime() - window.startUpdate);
-          window.ghostIn = new Float32Array(array_buffer, 0, ghostRowSize * columnSize);
-          window.ghostSet = true;
-        }
-      }
-    }
-    xhr.onreadystatechange = function(e) {
-      if (this.status != 200 && this.readyState == 4) {
-        console.log("could not load data from server " + this.status);
-        get_update(iteration);
-      }
-    }
-    xhr.send();
   }
 
   prepare_gpu = function() {
