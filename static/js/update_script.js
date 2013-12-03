@@ -2,7 +2,7 @@ setData = false;
 data = null;
 get_update = function() {
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/get_update_data/' + '127.0.0.1' + '/' + iteration, true); //true means async is true
+  xhr.open('GET', '/get_update_data/' + '10.0.0.10'+ '/' + iteration, true); //true means async is true
   xhr.responseType = 'arraybuffer';
   xhr.onload = function(e) {
     if (this.status == 200) {
