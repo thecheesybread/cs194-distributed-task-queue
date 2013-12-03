@@ -58,9 +58,16 @@ I am a distributed task node
       cmdQueue.finish();
       export_out_data(ghostOut, iteration);
       window.startUpdate = (new Date()).getTime();
-      while(!window.ghostSet) {sleep(100)};
-      main(window.ghostIn, iteration + 1); // read 1024 * 1024 / 4 ints of 4 bytes
+      window.iteration = iteration;
+      wait_for_ghost_set();
       //get_update(main, iteration);
+    }
+    wait_for_ghost_set = function() {
+      if(window.ghostSet) {
+        main(window.ghostIn, iteration + 1); // read 1024 * 1024 / 4 ints of 4 bytes
+      } else {
+        setTimeout(wait_for_ghost_set, 200);
+      }
     }
     task_id = "{{ context.task_id }}";
     while (!synchronize()){};
