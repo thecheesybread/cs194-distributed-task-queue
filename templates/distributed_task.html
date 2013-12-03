@@ -89,7 +89,8 @@ I am a distributed task node
     var iterations = ghostRowSize;
     //var iterations = 1;
     var data = [bufOut, bufIn, input];
-    document.getElementById("output").innerHTML += "<br><h3>NEW ITERATION</h3><br><br>";
+    //document.getElementById("output").innerHTML += "<br><h3>NEW ITERATION</h3><br><br>";
+    document.getElementById("output").innerHTML = "";
 
     for (var i = 0; i < iterations - 1; i++) {
       // TODO add isRightGhost parameter to actually reflect if the ghost cells to extract are on the left or right
