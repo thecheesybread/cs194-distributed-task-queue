@@ -66,7 +66,7 @@ I am a distributed task node
       if(window.ghostSet) {
         main(window.ghostIn, iteration + 1); // read 1024 * 1024 / 4 ints of 4 bytes
       } else {
-        setTimeout(wait_for_ghost_set, 200);
+        setTimeout(wait_for_ghost_set, 25);
       }
     }
     task_id = "{{ context.task_id }}";
