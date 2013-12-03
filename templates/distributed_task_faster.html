@@ -39,7 +39,7 @@ I am a distributed task node
 
     window.ghostOut = new Float32Array(ghostRowSize * columnSize);
     window.ghostIn;
-
+    window.ghostSet = false;
     main = function(input, iteration) {
       if (iteration == 0) {
         var bufSize = (n + ghostRowSize * columnSize) * 4; // size in bytes
@@ -51,12 +51,23 @@ I am a distributed task node
       } else {
         return;
       }
+      window.ghostSet = false;
+      get_update(iteration);
       run_laplace();
       cmdQueue.enqueueReadBuffer (ghostBuf, false, 0, ghostRowSize * columnSize, ghostOut, []);
       cmdQueue.finish();
       export_out_data(ghostOut, iteration);
       window.startUpdate = (new Date()).getTime();
-      get_update(main, iteration);
+      window.iteration = iteration;
+      wait_for_ghost_set();
+      //get_update(main, iteration);
+    }
+    wait_for_ghost_set = function() {
+      if(window.ghostSet) {
+        main(window.ghostIn, iteration + 1); // read 1024 * 1024 / 4 ints of 4 bytes
+      } else {
+        setTimeout(wait_for_ghost_set, 25);
+      }
     }
     task_id = "{{ context.task_id }}";
     while (!synchronize()){};
@@ -211,7 +222,7 @@ I am a distributed task node
     // use that to send xmlhttp data
   }
 
-  get_update = function(callback, iteration) {
+  get_update = function(iteration) {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', '/get_update_data/' + task_id + '/' + iteration, true); //true means async is true
     xhr.responseType = 'arraybuffer';
@@ -221,14 +232,15 @@ I am a distributed task node
         if (array_buffer) {
           //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
           console.log("Time to load update:" + ((new Date()).getTime() - window.startUpdate));
-          callback(new Float32Array(array_buffer, 0, ghostRowSize * columnSize), iteration + 1); // read 1024 * 1024 / 4 ints of 4 bytes
+          window.ghostIn = new Float32Array(array_buffer, 0, ghostRowSize * columnSize);
+          window.ghostSet = true;
         }
       }
     }
     xhr.onreadystatechange = function(e) {
       if (this.status != 200 && this.readyState == 4) {
         console.log("could not load data from server " + this.status);
-        get_update(callback, iteration);
+        get_update(iteration);
       }
     }
     xhr.send();
@@ -405,4 +417,5 @@ I am a distributed task node
                          // var row_size = 1024;
                          // draw_matrix(test_array, row_size, max);
                          </script>
+
 {% endblock %}
