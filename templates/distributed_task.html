@@ -40,15 +40,49 @@ I am a distributed task node
     window.ghostOut = new Float32Array(ghostRowSize * columnSize);
     window.ghostIn;
 
+    window.time_to_load_update = [];
+    window.total_iterations = [];
+    window.total_time = [];
+    window.average_per_iteration = [];
+
+
     main = function(input, iteration) {
       if (iteration == 0) {
         var bufSize = (n + ghostRowSize * columnSize) * 4; // size in bytes
         cmdQueue.enqueueWriteBuffer (bufIn, false, 0, bufSize, input, []);
+        window.start_time = (new Date()).getTime();
       } else if(iteration < totalNumIterations / ghostRowSize) {
         startLoadGhost = (new Date()).getTime();
         combineGhostHost(combineGhostKernel, input, cmdQueue, bufIn, index); //TODO isRightGhost is the last item and must be set
         console.log("Time to load ghost:" + ((new Date()).getTime() - startLoadGhost));
       } else {
+        console.log('TOTAL TIME:' + ((new Date()).getTime() - window.start_time));
+
+        var sum = 0;
+        for (var i = 0; i < window.time_to_load_update.length; i++) {
+          sum += window.time_to_load_update[i];
+        }
+        console.log('Time to load update:' + (sum/window.time_to_load_update.length));
+
+        var sum = 0;
+        for (var i = 0; i < window.total_time.length; i++) {
+          sum += window.total_time[i];
+        }
+        console.log('Average total time per ghost update:' + (sum/window.total_time.length));
+
+        var sum = 0;
+        for (var i = 0; i < window.total_iterations.length; i++) {
+          sum += window.total_iterations[i];
+        }
+        console.log('Number of iterations per ghost update:' + (sum/window.total_iterations.length));
+
+
+        var sum = 0;
+        for (var i = 0; i < window.average_per_iteration.length; i++) {
+          sum += window.average_per_iteration[i];
+        }
+        console.log('Average average time per iteration:' + (sum/window.average_per_iteration.length));
+
         return;
       }
       run_laplace();
@@ -108,8 +142,11 @@ I am a distributed task node
     data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, index, 1); //1 as last argument means set the ghostBuf with ghost cells to be sent
     var endTime = new Date().getTime();
     console.log("Total time:" + (endTime - startTime));
+    window.total_time.push(endTime - startTime);
     console.log(" Total iterations:" + iterations);
+    window.total_iterations.push(iterations);
     console.log(" Average per iteration:" + (endTime - startTime) / iterations);
+    window.average_per_iteration.push((endTime - startTime) / iterations);
   }
 
   CL_laplace = function (kernel, cmdQueue, bufIn, bufOut, ghostBuf, isRightGhost, setGhost) {
@@ -221,6 +258,7 @@ I am a distributed task node
         if (array_buffer) {
           //https://developer.mozilla.org/en-US/docs/Web/API/Uint32Array
           console.log("Time to load update:" + ((new Date()).getTime() - window.startUpdate));
+          window.time_to_load_update.push((new Date()).getTime() - window.startUpdate);
           callback(new Float32Array(array_buffer, 0, ghostRowSize * columnSize), iteration + 1); // read 1024 * 1024 / 4 ints of 4 bytes
         }
       }
