@@ -84,6 +84,7 @@ int main(int argc, char *argv[])
   err = clSetKernelArg(laplace, 4, sizeof(int), &n);
   CHK_ERR(err);
 
+  double time = timestamp();
   /* CS194: Call kernel laplace on the GPU */
   err = clEnqueueNDRangeKernel(cv.commands, //command_queue
              laplace, //kernel
@@ -100,14 +101,16 @@ int main(int argc, char *argv[])
   /* Read result of GPU on host CPU */
   err = clEnqueueReadBuffer(cv.commands, g_out, true, 0, sizeof(float)*n,
 			    h_out, 0, NULL, NULL);
+  printf("\nTime Taken: %f\n", timestamp() - time);
   CHK_ERR(err);
   err = clEnqueueReadBuffer(cv.commands, g_in, true, 0, sizeof(float)*n,
           h_in, 0, NULL, NULL);
   CHK_ERR(err);
 
+  /*
   for (int i=0; i<25; i++){
-    printf("index %d: %f\n", i, h_out[i]);
-  }
+  printf("index %d: %f\n", i, h_out[i]);
+  }*/
 
 /*
   bool er = false;
