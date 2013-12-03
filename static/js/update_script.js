@@ -12,7 +12,6 @@ get_update = function() {
         //console.log("Time to load update:" + ((new Date()).getTime() - window.startUpdate));
         //window.time_to_load_update.push((new Date()).getTime() - window.startUpdate);
         postMessage(array_buffer);
-        self.close();
       }
     }
   }
