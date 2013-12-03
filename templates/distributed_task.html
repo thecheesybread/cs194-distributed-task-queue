@@ -91,9 +91,9 @@ I am a distributed task node
     var data = [bufOut, bufIn, input];
     document.getElementById("output").innerHTML = "";
 
-    for (var i = 0; i < iterations; i++) {
+    for (var i = 0; i < iterations - 1; i++) {
       // TODO add isRightGhost parameter to actually reflect if the ghost cells to extract are on the left or right
-      data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, 0, 0); //0 as last argument means do not set ghostBuf with ghost cells
+      data = CL_laplace(laplaceKernel, cmdQueue, data[1], data[0], ghostBuf, index, 0); //0 as last argument means do not set ghostBuf with ghost cells
       output = document.getElementById("output");
       output.innerHTML += "<br>  iteration number " + i + "<br>";
       display_results(data[2], rowSize + ghostRowSize, columnSize);

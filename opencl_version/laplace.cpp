@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 
   /* Read OpenCL file into STL string */
   readFile(laplace_kernel_file,
-	   laplace_kernel_str);
+           laplace_kernel_str);
 
   /* Initialize the OpenCL runtime
    * Source in clhelp.cpp */
@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 
   /* Compile all OpenCL kernels */
   compile_ocl_program(laplace, cv, laplace_kernel_str.c_str(),
-		      laplace_name_str.c_str());
+                      laplace_name_str.c_str());
 
   /* Arrays on the host (CPU) */
   float *h_in, *h_out;
@@ -63,10 +63,10 @@ int main(int argc, char *argv[])
 
   /* CS194: Copy Y array data from host CPU to GPU */
   err = clEnqueueWriteBuffer(cv.commands, g_out, true, 0, sizeof(float)*n,
-           h_out, 0, NULL, NULL);
+                             h_out, 0, NULL, NULL);
 
   err = clEnqueueWriteBuffer(cv.commands, g_in, true, 0, sizeof(float)*n,
-           h_in, 0, NULL, NULL);
+                             h_in, 0, NULL, NULL);
 
   /* CS194: Define the global and local workgroup sizes */
   size_t global_work_size[2] = {rowSize, colSize};
@@ -87,48 +87,48 @@ int main(int argc, char *argv[])
   double time = timestamp();
   /* CS194: Call kernel laplace on the GPU */
   err = clEnqueueNDRangeKernel(cv.commands, //command_queue
-             laplace, //kernel
-             2,//work_dim,
-             NULL, //global_work_offset
-             global_work_size, //global_work_size
-             local_work_size, //local_work_size
-             0, //num_events_in_wait_list
-             NULL, //event_wait_list
-             NULL //event
-             );
+                               laplace, //kernel
+                               2,//work_dim,
+                               NULL, //global_work_offset
+                               global_work_size, //global_work_size
+                               local_work_size, //local_work_size
+                               0, //num_events_in_wait_list
+                               NULL, //event_wait_list
+                               NULL //event
+                               );
   CHK_ERR(err);
 
   /* Read result of GPU on host CPU */
   err = clEnqueueReadBuffer(cv.commands, g_out, true, 0, sizeof(float)*n,
-			    h_out, 0, NULL, NULL);
-  printf("\nTime Taken: %f\n", timestamp() - time);
+                            h_out, 0, NULL, NULL);
+  printf("\nTime GPU: %f\n", timestamp() - time);
   CHK_ERR(err);
   err = clEnqueueReadBuffer(cv.commands, g_in, true, 0, sizeof(float)*n,
-          h_in, 0, NULL, NULL);
+                            h_in, 0, NULL, NULL);
   CHK_ERR(err);
 
   /*
-  for (int i=0; i<25; i++){
-  printf("index %d: %f\n", i, h_out[i]);
-  }*/
+    for (int i=0; i<25; i++){
+    printf("index %d: %f\n", i, h_out[i]);
+    }*/
 
-/*
-  bool er = false;
-  for(int i = 0; i < n; i++)
+  /*
+    bool er = false;
+    for(int i = 0; i < n; i++)
     {
-      float d = h_A[i] + h_B[i];
-      if(h_Y[i] != d)
-	{
+    float d = h_A[i] + h_B[i];
+    if(h_Y[i] != d)
+    {
 	  printf("error at %d :(\n", i);
     er = true;
 	  break;
-	}
     }
-  if(!er)
+    }
+    if(!er)
     {
-      printf("CPU and GPU results match\n");
+    printf("CPU and GPU results match\n");
     }
-*/
+  */
 
   /* Shut down the OpenCL runtime */
   uninitialize_ocl(cv);
@@ -138,6 +138,47 @@ int main(int argc, char *argv[])
 
   clReleaseMemObject(g_in);
   clReleaseMemObject(g_out);
+
+  h_in = new float[n * 2];
+  h_out = new float[n * 2];
+  for (int i = 0; i < n * 2; i++) {
+    h_in[i] = i % (rowSize * 2);
+  }
+  time = timestamp();
+  int NUM_ITERATIONS = 1024;
+  for (int iteration = 0; iteration < NUM_ITERATIONS; iteration++) {
+    for (int x = 0; x < rowSize * 2; x++) {
+      for (int y = 0; y < rowSize; y++) {
+        int index = y * 2 * rowSize + x;
+        float num = 0;
+        float denom = 0;
+        if (x > 0) {
+          num += h_in[index - 1];
+          denom+=1;
+        }
+        if (x < 2 * rowSize - 1) {
+          num += h_in[index + 1];
+          denom+=1;
+        }
+        if (y > 0) {
+          num += h_in[index - 2 * rowSize];
+          denom+=1;
+        }
+        if (y < colSize - 1) {
+          num += h_in[index + 2 * rowSize];
+          denom+=1;
+        }
+        h_out[index] = num / denom;
+      }
+    }
+    float* temp = h_in;
+    h_in = h_out;
+    h_out = temp;
+    printf("Top left of right node: %f\n", h_out[rowSize - 64]);
+  }
+  printf("CPU Time taken: %f \nNumber of iterations: %d\n Average time per iteration: %f\n", timestamp() - time, NUM_ITERATIONS, (timestamp() - time) / NUM_ITERATIONS);
+  printf("Top left of right node: %f\n", h_out[rowSize - 64]);
+
 
   return 0;
 }
